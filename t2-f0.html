@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>體溫的恆定性：內溫與外溫動物</title>
+    
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --warm-color: #FF7043; /* 暖色調 - 內溫 */
+            --warm-bg: #FFF3E0;
+            --cold-color: #29B6F6; /* 冷色調 - 外溫 */
+            --cold-bg: #E1F5FE;
+            --text-main: #333333;
+            --text-light: #666666;
+            --success: #66BB6A;
+            --error: #EF5350;
+            --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--text-main);
+            line-height: 1.8;
+            padding: 20px;
+            font-size: 18px; /* 加大字體 */
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        /* Card UI Design */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: var(--card-shadow);
+            border-left: 8px solid #ccc;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-cold {
+            border-left-color: var(--cold-color);
+            background: linear-gradient(to right, #fff 95%, var(--cold-bg));
+        }
+
+        .card-warm {
+            border-left-color: var(--warm-color);
+            background: linear-gradient(to right, #fff 95%, var(--warm-bg));
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .text-cold { color: #0288D1; }
+        .text-warm { color: #D84315; }
+
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        /* Dropdown Styling */
+        select {
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 1.1rem;
+            padding: 5px 10px;
+            margin: 0 5px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            cursor: pointer;
+            color: var(--text-main);
+            transition: all 0.3s;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #90CAF9;
+            box-shadow: 0 0 5px rgba(144, 202, 249, 0.5);
+        }
+
+        select.correct {
+            border-color: var(--success);
+            background-color: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        select.wrong {
+            border-color: var(--error);
+            background-color: #FFEBEE;
+            color: #C62828;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            text-align: center;
+            margin-top: 40px;
+            padding-bottom: 60px;
+        }
+
+        .btn {
+            font-size: 1.2rem;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-check {
+            background-color: #5C6BC0;
+            color: white;
+        }
+
+        .btn-check:hover {
+            background-color: #3F51B5;
+            transform: scale(1.05);
+        }
+
+        .btn-next {
+            background-color: var(--success);
+            color: white;
+            display: none; /* Hide initially */
+            animation: bounceIn 0.8s;
+            text-decoration: none;
+        }
+
+        .btn-next:hover {
+            background-color: #43A047;
+            transform: scale(1.05);
+        }
+
+        .result-msg {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            height: 30px;
+        }
+
+        .hidden-icon {
+            display: none;
+            margin-left: 5px;
+        }
+
+        /* Keyframes */
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { opacity: 1; transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        /* RWD */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.6rem; }
+            h2 { font-size: 1.3rem; }
+            .card { padding: 20px; }
+            select { width: 100%; margin: 10px 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1><i class="fa-solid fa-temperature-three-quarters"></i> 生物的恆定性</h1>
+            <p class="subtitle">請根據課本 P.160-162 內容，選出正確的答案以完成筆記。</p>
+        </header>
+
+        <!-- 卡片 1: 外溫動物 -->
+        <section class="card card-cold">
+            <h2 class="text-cold">
+                <i class="fa-regular fa-snowflake"></i> 1. 外溫動物（變溫動物）
+            </h2>
+            <p>
+                這類動物的腦部缺乏調節體溫的中樞，體溫會隨著
+                <select id="q1">
+                    <option value="">請選擇</option>
+                    <option value="wrong">心跳速率</option>
+                    <option value="correct">環境溫度</option>
+                    <option value="wrong">食量大小</option>
+                </select>
+                而改變。
+            </p>
+            <p>
+                牠們主要藉由
+                <select id="q2">
+                    <option value="">請選擇</option>
+                    <option value="wrong">生理構造</option>
+                    <option value="correct">行為</option>
+                    <option value="wrong">喝水</option>
+                </select>
+                來調節體溫。例如：在天氣寒冷時，會到陽光下
+                <select id="q3">
+                    <option value="">請選擇</option>
+                    <option value="correct">曬太陽</option>
+                    <option value="wrong">躲在洞穴</option>
+                    <option value="wrong">快速奔跑</option>
+                </select>
+                以吸收熱能；天氣炎熱時，則躲在陰涼處或水中散熱。
+            </p>
+            <p>
+                <strong><i class="fa-solid fa-tags"></i> 實例：</strong>
+                魚類、
+                <select id="q4">
+                    <option value="">請選擇</option>
+                    <option value="wrong">鳥類</option>
+                    <option value="correct">兩生類</option>
+                    <option value="wrong">人類</option>
+                </select>
+                、爬蟲類。
+            </p>
+        </section>
+
+        <!-- 卡片 2: 內溫動物 -->
+        <section class="card card-warm">
+            <h2 class="text-warm">
+                <i class="fa-solid fa-fire"></i> 2. 內溫動物（恆溫動物）
+            </h2>
+            <p>
+                這類動物的體溫調節中樞位於
+                <select id="q5">
+                    <option value="">請選擇</option>
+                    <option value="wrong">心臟</option>
+                    <option value="wrong">脊髓</option>
+                    <option value="correct">腦部</option>
+                </select>
+                （下視丘）。牠們能利用
+                <select id="q6">
+                    <option value="">請選擇</option>
+                    <option value="correct">代謝作用</option>
+                    <option value="wrong">光合作用</option>
+                    <option value="wrong">擴散作用</option>
+                </select>
+                產生熱能，維持體溫維持在一定範圍。
+            </p>
+            <p>
+                <strong><i class="fa-solid fa-tags"></i> 實例：</strong>
+                <select id="q7">
+                    <option value="">請選擇</option>
+                    <option value="wrong">昆蟲</option>
+                    <option value="correct">鳥類</option>
+                    <option value="wrong">魚類</option>
+                </select>
+                、哺乳類。
+            </p>
+        </section>
+
+        <!-- 卡片 3: 人類的體溫調節 -->
+        <section class="card">
+            <h2><i class="fa-solid fa-person-running"></i> 3. 人體的體溫調節機制</h2>
+            <div style="background-color: var(--warm-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                <strong><i class="fa-solid fa-sun"></i> 當炎熱或運動時（體溫上升）：</strong>
+                <br>
+                皮膚血管會
+                <select id="q8">
+                    <option value="">請選擇</option>
+                    <option value="correct">擴張</option>
+                    <option value="wrong">收縮</option>
+                </select>
+                ，使流經皮膚的血液量增加，加速散熱；汗腺分泌汗液，利用水分蒸發帶走熱量。
+            </div>
+            
+            <div style="background-color: var(--cold-bg); padding: 15px; border-radius: 8px;">
+                <strong><i class="fa-solid fa-wind"></i> 當寒冷時（體溫下降）：</strong>
+                <br>
+                皮膚血管會收縮，減少散熱。肌肉會
+                <select id="q9">
+                    <option value="">請選擇</option>
+                    <option value="wrong">放鬆</option>
+                    <option value="correct">顫抖</option>
+                </select>
+                以產生熱能；同時食慾會
+                <select id="q10">
+                    <option value="">請選擇</option>
+                    <option value="wrong">減退</option>
+                    <option value="correct">增加</option>
+                </select>
+                ，攝取食物以產生能量。
+            </div>
+        </section>
+
+        <div class="control-panel">
+            <button class="btn btn-check" onclick="checkAnswers()">
+                <i class="fa-solid fa-check-double"></i> 檢查答案
+            </button>
+            <div id="resultMessage" class="result-msg"></div>
+            
+            <!-- 隱藏的下一頁按鈕 -->
+            <a href="t2-w1.html" id="nextBtn" class="btn btn-next">
+                下一頁 <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function checkAnswers() {
+            // 取得所有 select 元素
+            const selects = document.querySelectorAll('select');
+            let allCorrect = true;
+            let answeredCount = 0;
+
+            selects.forEach(select => {
+                const selectedValue = select.value;
+                const parent = select.parentElement;
+
+                // 移除舊的狀態 class
+                select.classList.remove('correct', 'wrong');
+
+                if (selectedValue === "") {
+                    allCorrect = false;
+                } else {
+                    answeredCount++;
+                    if (selectedValue === "correct") {
+                        select.classList.add('correct');
+                    } else {
+                        select.classList.add('wrong');
+                        allCorrect = false;
+                    }
+                }
+            });
+
+            const resultMsg = document.getElementById('resultMessage');
+            const nextBtn = document.getElementById('nextBtn');
+            const checkBtn = document.querySelector('.btn-check');
+
+            if (answeredCount < selects.length) {
+                resultMsg.style.color = "#FF9800";
+                resultMsg.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 還有題目沒寫完喔！`;
+                nextBtn.style.display = "none";
+            } else if (allCorrect) {
+                resultMsg.style.color = "var(--success)";
+                resultMsg.innerHTML = `<i class="fa-solid fa-circle-check"></i> 太棒了！觀念完全正確！`;
+                
+                // 隱藏檢查按鈕，顯示下一頁按鈕
+                checkBtn.style.display = "none";
+                nextBtn.style.display = "inline-flex";
+                
+                // 簡單的慶祝效果 (Scroll to bottom)
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            } else {
+                resultMsg.style.color = "var(--error)";
+                resultMsg.innerHTML = `<i class="fa-solid fa-xmark"></i> 還有錯誤，請再檢查一下紅色框框的選項。`;
+                nextBtn.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
