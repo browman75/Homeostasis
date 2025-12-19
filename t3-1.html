@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>爬蟲寵物生存模擬器 | 恆定性總部</title>
+    
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- 自定義樣式 -->
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #ecfccb; /* Lime-100 */
+            color: #1e293b; /* Slate-800 */
+            font-size: 16px; 
+            line-height: 1.5;
+        }
+
+        /* 區塊通用樣式 */
+        .learning-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 2px solid #d9f99d; /* Lime-200 */
+        }
+
+        /* 設備開關按鈕 */
+        .toggle-btn {
+            border: 2px solid #cbd5e1;
+            background-color: #f8fafc;
+            color: #64748b;
+            transition: all 0.2s;
+            transform: scale(1);
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .toggle-btn:hover:not(:disabled) {
+            background-color: #f1f5f9;
+        }
+        .toggle-btn.active {
+            border-color: #22c55e;
+            background-color: #dcfce7;
+            color: #15803d;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .toggle-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #e2e8f0;
+            border-color: #cbd5e1;
+            color: #94a3b8;
+        }
+
+        /* 選擇卡片 (季節/寵物) */
+        .selection-card {
+            border: 3px solid transparent;
+            opacity: 0.7;
+            filter: grayscale(0.3);
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+            padding: 0.5rem;
+        }
+        .selection-card:hover {
+            opacity: 0.9;
+        }
+        .selection-card.selected {
+            border-color: #3b82f6;
+            opacity: 1;
+            filter: grayscale(0);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background-color: white;
+        }
+        /* 通關標記 */
+        .selection-card.passed {
+            border-color: #22c55e;
+        }
+        .selection-card.passed::after {
+            content: '已通關';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #22c55e;
+            color: white;
+            font-weight: bold;
+            padding: 1px 6px;
+            border-radius: 999px;
+            font-size: 0.6rem;
+            z-index: 10;
+        }
+
+        /* 圖表容器 */
+        .chart-container {
+            width: 100%;
+            height: 250px;
+            position: relative;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        /* 飼養箱視覺化 */
+        #cage-container {
+            height: 250px;
+        }
+        .cage-item {
+            transition: all 0.3s ease;
+        }
+
+        /* 鎖定按鈕 */
+        .btn-locked {
+            background-color: #cbd5e1 !important;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* 填空題輸入框 */
+        .quiz-input {
+            border: none;
+            border-bottom: 3px solid #94a3b8;
+            background: transparent;
+            text-align: center;
+            color: #0369a1;
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding: 0 0.5rem;
+            width: 120px;
+            transition: all 0.3s;
+        }
+        .quiz-input:focus {
+            outline: none;
+            border-bottom-color: #0ea5e9;
+            background-color: #e0f2fe;
+        }
+
+        /* 寵物圖片樣式 */
+        .pet-avatar {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin: 0 auto 5px;
+            border: 2px solid #e2e8f0;
+        }
+        .selected .pet-avatar {
+            border-color: #3b82f6;
+        }
+
+        /* 警告動畫 */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .warning-active {
+            animation: pulse-red 1s infinite;
+            border-color: #ef4444 !important;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- 導航列 -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="bg-lime-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-staff-snake"></i>
+                </div>
+                <h1 class="font-bold text-xl tracking-wide text-slate-800">爬蟲寵物生存模擬器</h1>
+            </div>
+            <div class="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">單元 3：進階挑戰</div>
+        </div>
+    </nav>
+
+    <main class="flex-grow w-full max-w-7xl mx-auto p-4 space-y-6">
+        
+        <!-- 說明區 -->
+        <section class="learning-section py-4">
+            <h2 class="text-xl font-bold text-slate-800 mb-2">
+                <i class="fa-solid fa-book-open text-lime-600 mr-2"></i> 遊戲規則說明
+            </h2>
+            <div class="text-base text-slate-700 leading-relaxed space-y-2">
+                <p>
+                    請觀察不同季節的溫度變化，並在<b>模擬過程中即時調整設備</b>來維持寵物體溫。
+                    <br><span class="text-xs text-slate-500 font-bold">※ 模擬從早上 8:00 開始，持續 24 小時。</span>
+                </p>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="bg-white p-3 rounded-lg border-l-4 border-indigo-500 shadow-sm text-sm">
+                        <h4 class="font-bold text-indigo-700">黑夜豹紋守宮</h4>
+                        <ul class="list-disc list-inside text-slate-600">
+                            <li>適合：<b class="text-green-600">26 ~ 32°C</b></li>
+                            <li>死亡：<b class="text-red-600">&lt; 15°C</b> 或 <b class="text-red-600">&gt; 38°C</b></li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border-l-4 border-red-500 shadow-sm text-sm">
+                        <h4 class="font-bold text-red-700">牛奶蛇</h4>
+                        <ul class="list-disc list-inside text-slate-600">
+                            <li>適合：<b class="text-green-600">24 ~ 28°C</b></li>
+                            <li>死亡：<b class="text-red-600">&lt; 18°C</b> 或 <b class="text-red-600">&gt; 32°C</b></li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="mt-1 text-xs text-slate-500 font-bold">※ 通關條件：夏天和冬天都必須挑戰成功（不限定寵物）。</p>
+            </div>
+        </section>
+
+        <!-- 模擬器控制台：單列佈局 -->
+        <section class="learning-section relative">
+            
+            <!-- 頂部控制列 -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-2 bg-slate-50 rounded-xl border border-slate-200">
+                
+                <!-- 1. 寵物 -->
+                <div class="col-span-1">
+                    <h3 class="text-sm font-bold text-slate-500 mb-2 uppercase tracking-wider">1. 選擇寵物</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="pet-gecko" onclick="selectPet('gecko')" class="selection-card bg-white rounded-lg cursor-pointer text-center">
+                            <img src="t3-1-a.png" alt="守宮" class="pet-avatar" onerror="this.src='https://placehold.co/60x60?text=Gecko'">
+                            <div class="font-bold text-xs text-slate-700">守宮</div>
+                        </button>
+                        <button id="pet-snake" onclick="selectPet('snake')" class="selection-card bg-white rounded-lg cursor-pointer text-center">
+                            <img src="t3-1-b.png" alt="牛奶蛇" class="pet-avatar" onerror="this.src='https://placehold.co/60x60?text=Snake'">
+                            <div class="font-bold text-xs text-slate-700">牛奶蛇</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. 季節 -->
+                <div class="col-span-1">
+                    <h3 class="text-sm font-bold text-slate-500 mb-2 uppercase tracking-wider">2. 選擇季節</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="season-summer" onclick="selectSeason('summer')" class="selection-card bg-orange-50 rounded-lg cursor-pointer text-center hover:bg-orange-100">
+                            <i class="fa-solid fa-sun text-2xl text-orange-500 mb-1"></i>
+                            <div class="font-bold text-xs text-slate-700">夏天</div>
+                        </button>
+                        <button id="season-winter" onclick="selectSeason('winter')" class="selection-card bg-blue-50 rounded-lg cursor-pointer text-center hover:bg-blue-100">
+                            <i class="fa-regular fa-snowflake text-2xl text-blue-500 mb-1"></i>
+                            <div class="font-bold text-xs text-slate-700">冬天</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. 環境設備 (可隨時調整) -->
+                <div class="col-span-1">
+                    <h3 class="text-sm font-bold text-slate-500 mb-2 uppercase tracking-wider">3. 調整設備</h3>
+                    <div class="space-y-2">
+                        <button id="toggle-lamp" onclick="toggleEquip('lamp')" class="toggle-btn w-full p-2 rounded-lg flex items-center justify-between text-xs font-bold">
+                            <span><i class="fa-regular fa-lightbulb mr-1 text-yellow-500"></i> 加熱燈</span>
+                            <span class="status-text">OFF</span>
+                        </button>
+                        <button id="toggle-ac" onclick="toggleEquip('ac')" class="toggle-btn w-full p-2 rounded-lg flex items-center justify-between text-xs font-bold">
+                            <span><i class="fa-solid fa-wind mr-1 text-blue-500"></i> 冷氣</span>
+                            <span class="status-text">OFF</span>
+                        </button>
+                        <button id="toggle-slate" onclick="toggleEquip('slate')" class="toggle-btn w-full p-2 rounded-lg flex items-center justify-between text-xs font-bold">
+                            <span><i class="fa-solid fa-house-chimney mr-1 text-gray-500"></i> 石板屋</span>
+                            <span class="status-text">OFF</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. 生存資源 (限一次) -->
+                <div class="col-span-1">
+                    <h3 class="text-sm font-bold text-slate-500 mb-2 uppercase tracking-wider">4. 資源 (限一次)</h3>
+                    <div class="grid grid-cols-2 gap-2 h-full">
+                        <button id="btn-food" onclick="useResource('food')" class="toggle-btn rounded-lg flex flex-col items-center justify-center gap-1 h-24">
+                            <i class="fa-solid fa-bowl-food text-2xl text-orange-600"></i>
+                            <span class="text-xs font-bold">給食物</span>
+                        </button>
+                        <button id="btn-water" onclick="useResource('water')" class="toggle-btn rounded-lg flex flex-col items-center justify-center gap-1 h-24">
+                            <i class="fa-solid fa-glass-water text-2xl text-blue-400"></i>
+                            <span class="text-xs font-bold">給水</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 開始按鈕 -->
+            <button id="btn-start" onclick="startSimulationLoop()" class="w-full bg-slate-800 text-white font-bold text-lg py-3 rounded-xl shadow-lg hover:bg-slate-700 transform active:scale-95 transition mb-6">
+                <i class="fa-solid fa-play mr-2"></i> 開始 24 小時模擬 (過程可操作設備)
+            </button>
+
+            <!-- 視覺化與圖表：雙列佈局 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                
+                <!-- 左側：飼養箱 -->
+                <div class="relative w-full bg-slate-100 border-4 border-slate-300 rounded-xl overflow-hidden shadow-inner" id="cage-container">
+                    <!-- 背景 (日夜變化 + 圖片) -->
+                    <div id="cage-bg" class="absolute inset-0 bg-cover bg-center transition-all duration-1000" style="background-image: url('t3-1-c.png');"></div>
+                    
+                    <!-- 標題與時間 -->
+                    <div class="absolute top-2 left-2 flex gap-2 z-10">
+                        <div class="bg-black/40 text-white px-3 py-1 rounded-full text-sm font-bold backdrop-blur-sm">
+                            <span id="clock-display">08:00</span>
+                        </div>
+                        <div id="temp-warning" class="hidden bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold animate-pulse shadow-lg border border-white">
+                            <i class="fa-solid fa-triangle-exclamation"></i> 溫度異常！
+                        </div>
+                    </div>
+
+                    <!-- 設備圖示 -->
+                    <!-- 燈 -->
+                    <div id="visual-lamp" class="absolute top-0 left-1/2 -translate-x-1/2 text-yellow-400 text-5xl drop-shadow-[0_0_20px_rgba(250,204,21,1)] hidden cage-item z-20">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <div class="absolute top-8 left-1/2 -translate-x-1/2 w-32 h-32 bg-gradient-to-b from-yellow-200/50 to-transparent clip-path-triangle pointer-events-none"></div>
+                    </div>
+                    
+                    <!-- 冷氣 -->
+                    <div id="visual-ac" class="absolute top-2 right-2 text-blue-500 text-4xl hidden cage-item z-20 animate-pulse">
+                        <i class="fa-solid fa-snowflake"></i>
+                        <div class="absolute top-8 right-8 -translate-x-2 text-xs text-blue-500 font-bold"><i class="fa-solid fa-wind"></i> 強力運轉</div>
+                    </div>
+
+                    <!-- 石板屋 (加大圖示) -->
+                    <div id="visual-slate" class="absolute bottom-2 left-1/2 -translate-x-1/2 text-stone-600 text-[10rem] hidden cage-item z-10 drop-shadow-md">
+                        <i class="fa-solid fa-house-chimney"></i>
+                    </div>
+
+                    <!-- 食物 -->
+                    <div id="visual-food" class="absolute bottom-2 left-4 text-orange-600 text-3xl hidden cage-item z-20 transition-opacity duration-1000">
+                        <i class="fa-solid fa-bowl-food"></i>
+                    </div>
+
+                    <!-- 水 -->
+                    <div id="visual-water" class="absolute bottom-2 right-4 text-blue-400 text-3xl hidden cage-item z-20 transition-opacity duration-1000">
+                        <i class="fa-solid fa-glass-water"></i>
+                    </div>
+
+                    <!-- 寵物本體 -->
+                    <div id="visual-pet-container" class="absolute bottom-2 left-1/2 -translate-x-1/2 transition-all duration-1000 z-30">
+                        <img id="visual-pet-img" src="t3-1-a.png" class="w-24 h-auto drop-shadow-lg" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iIzIyYzU1ZSIvPjwvc3ZnPg=='">
+                    </div>
+                </div>
+
+                <!-- 右側：圖表 -->
+                <div class="flex flex-col h-full">
+                    <div class="flex justify-between items-end border-b-2 border-lime-200 pb-1 mb-1">
+                        <h3 class="text-base font-bold text-slate-800">溫度監測</h3>
+                        <span id="chart-info" class="text-xs font-bold text-slate-500">請先選擇寵物</span>
+                    </div>
+                    
+                    <div class="chart-container relative bg-white flex-grow">
+                        <!-- 座標軸標籤 -->
+                        <div class="absolute left-1 top-1 text-[10px] text-slate-400 font-bold">°C</div>
+                        <div class="absolute right-1 bottom-1 text-[10px] text-slate-400 font-bold">hr</div>
+                        
+                        <svg id="chart-svg" width="100%" height="100%" viewBox="0 0 600 250" preserveAspectRatio="none">
+                            <!-- 格線由 JS 生成 -->
+                        </svg>
+                    </div>
+
+                    <!-- 圖例 -->
+                    <div class="flex justify-center gap-4 mt-2 text-xs font-bold text-slate-600">
+                        <div class="flex items-center"><span class="w-3 h-3 bg-blue-300 rounded-full mr-1"></span> 環境</div>
+                        <div class="flex items-center"><span class="w-3 h-3 bg-red-500 rounded-full mr-1"></span> 體溫</div>
+                        <div class="flex items-center"><span class="w-3 h-3 border border-green-400 bg-green-50 rounded mr-1"></span> 適合區</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 結果回饋 -->
+            <div id="result-box" class="mt-4 p-4 rounded-xl border-2 hidden text-center bg-white shadow-lg">
+                <h4 id="result-title" class="text-xl font-bold mb-1"></h4>
+                <p id="result-desc" class="text-base"></p>
+            </div>
+        </section>
+
+        <!-- 評量區 (闖關後解鎖) -->
+        <section id="assessment-section" class="learning-section opacity-50 pointer-events-none filter blur-sm transition-all duration-1000">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="bg-indigo-600 text-white text-sm px-3 py-1 rounded-lg font-bold">通關評量</span>
+                <h2 class="text-2xl font-bold text-slate-800">生態觀察家測驗</h2>
+            </div>
+            <p class="text-slate-600 mb-6 text-base">
+                恭喜你成功在不同季節照顧了寵物！請回答下列問題：
+            </p>
+
+            <div class="space-y-6">
+                <!-- 題目 1 -->
+                <div class="quiz-block bg-white p-4 rounded-xl border-l-4 border-indigo-500 shadow-sm">
+                    <label class="block text-slate-800 font-bold mb-2 text-lg">
+                        1. (比較分析) 牛奶蛇與守宮相比，對溫度的耐受範圍有何不同？
+                    </label>
+                    <div class="space-y-2 text-base">
+                        <label class="flex items-center gap-3 cursor-pointer p-2 hover:bg-indigo-50 rounded-lg">
+                            <input type="radio" name="q1" value="A" class="w-4 h-4"> 
+                            <span>牛奶蛇比較不怕熱，可以承受 40°C 高溫。</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-2 hover:bg-indigo-50 rounded-lg">
+                            <input type="radio" name="q1" value="B" class="w-4 h-4"> 
+                            <span>牛奶蛇的適合溫度範圍較窄，且比守宮更怕高溫（>32°C即危險）。</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-2 hover:bg-indigo-50 rounded-lg">
+                            <input type="radio" name="q1" value="C" class="w-4 h-4"> 
+                            <span>兩者完全一樣。</span>
+                        </label>
+                    </div>
+                    <div id="fb-q1" class="hidden mt-2 font-bold text-base p-2 rounded"></div>
+                </div>
+
+                <!-- 題目 2 -->
+                <div class="quiz-block bg-white p-4 rounded-xl border-l-4 border-green-500 shadow-sm">
+                    <label class="block text-slate-800 font-bold mb-2 text-lg leading-loose">
+                        2. (填空) 無論是守宮還是牛奶蛇，牠們無法像哺乳類一樣透過顫抖產熱，必須依靠
+                        <input type="text" id="ans2" class="quiz-input" placeholder="行為/移動">
+                        來維持體溫。
+                    </label>
+                    <div id="fb-q2" class="hidden mt-2 font-bold text-base p-2 rounded"></div>
+                </div>
+
+                <div class="flex justify-center mt-4">
+                    <button onclick="checkQuiz()" class="bg-indigo-600 text-white px-8 py-3 rounded-full text-lg font-bold hover:bg-indigo-500 shadow-xl transition transform hover:-translate-y-1">
+                        提交答案
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 頁尾導航 -->
+        <div class="text-center pb-12">
+            <p id="final-msg" class="text-slate-500 text-base mb-4 font-medium">
+                <i class="fa-solid fa-lock"></i> 請先通過上方模擬 (夏+冬)
+            </p>
+            <a id="next-btn" href="t4.html" class="btn-locked inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-10 rounded-full shadow-xl transition-all transform active:scale-95 text-lg">
+                下一頁 <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+
+    </main>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        // --- 設定資料 ---
+        const petsData = {
+            gecko: {
+                name: "黑夜豹紋守宮",
+                img: "t3-1-a.png",
+                ideal: [26, 32],
+                deadLow: 15,
+                deadHigh: 38
+            },
+            snake: {
+                name: "牛奶蛇",
+                img: "t3-1-b.png",
+                ideal: [24, 28],
+                deadLow: 18,
+                deadHigh: 32
+            }
+        };
+
+        // --- 狀態變數 ---
+        let currentPet = null;
+        let currentSeason = null;
+        // 設備狀態
+        let equipment = { lamp: false, slate: false, ac: false };
+        // 資源狀態 (一次性)
+        let resources = { food: false, water: false };
+        let clearedSeasons = new Set(); // 儲存已通關的季節 ['summer', 'winter']
+        let isSimulating = false;
+        let simInterval = null;
+        
+        // 模擬數據儲存
+        let simData = {
+            env: [],
+            body: [],
+            hour: 0,
+            health: 100,
+            isDead: false,
+            deathReason: ""
+        };
+
+        // --- 初始化圖表 ---
+        function initChart(petId) {
+            const svg = document.getElementById('chart-svg');
+            const info = document.getElementById('chart-info');
+            let gridHtml = '';
+            
+            // 畫 Y 軸格線 (0-50度)
+            for(let i=0; i<=5; i++) {
+                const y = 250 - (i * 50); 
+                gridHtml += `<line x1="0" y1="${y}" x2="600" y2="${y}" stroke="#e2e8f0" stroke-width="1" />`;
+                gridHtml += `<text x="5" y="${y-5}" fill="#94a3b8" font-size="10">${i*10}</text>`;
+            }
+            // 畫 X 軸格線 (0-24小時, 每4小時一格)
+            for(let i=0; i<=6; i++) {
+                const x = i * 100; // 600px / 6 = 100px
+                gridHtml += `<line x1="${x}" y1="0" x2="${x}" y2="250" stroke="#e2e8f0" stroke-width="1" />`;
+            }
+
+            if (petId) {
+                const config = petsData[petId];
+                info.innerText = `${config.name} 適合：${config.ideal[0]}-${config.ideal[1]}°C`;
+
+                // 紅色死亡區
+                const yDeadHigh = 250 - (config.deadHigh/50)*250;
+                const yDeadLow = 250 - (config.deadLow/50)*250;
+                
+                gridHtml += `<rect x="0" y="0" width="600" height="${yDeadHigh}" fill="rgba(239, 68, 68, 0.15)" />`;
+                gridHtml += `<rect x="0" y="${yDeadLow}" width="600" height="${250-yDeadLow}" fill="rgba(59, 130, 246, 0.15)" />`;
+
+                // 綠色適合區
+                const yIdealMax = 250 - (config.ideal[1]/50)*250;
+                const yIdealMin = 250 - (config.ideal[0]/50)*250;
+                gridHtml += `<rect x="0" y="${yIdealMax}" width="600" height="${yIdealMin-yIdealMax}" fill="rgba(34, 197, 94, 0.1)" stroke="rgba(34, 197, 94, 0.4)" stroke-dasharray="5,5" />`;
+            } else {
+                info.innerText = "請先選擇寵物以顯示參考線";
+            }
+
+            // 資料路徑
+            gridHtml += `<polyline id="line-env" points="" fill="none" stroke="#93c5fd" stroke-width="2" stroke-linecap="round" />`;
+            gridHtml += `<polyline id="line-body" points="" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round" />`;
+
+            svg.innerHTML = gridHtml;
+        }
+        initChart(null);
+
+        // --- 使用者操作 ---
+        function selectPet(petId) {
+            if (isSimulating) return; // 模擬中不可換寵物
+            currentPet = petId;
+            document.querySelectorAll('#pet-gecko, #pet-snake').forEach(el => el.classList.remove('selected'));
+            document.getElementById(`pet-${petId}`).classList.add('selected');
+            
+            // 更新圖片
+            const imgEl = document.getElementById('visual-pet-img');
+            imgEl.src = petsData[petId].img;
+            
+            initChart(petId);
+            document.getElementById('result-box').classList.add('hidden');
+            resetChart();
+        }
+
+        function selectSeason(season) {
+            if (isSimulating) return; // 模擬中不可換季節
+            currentSeason = season;
+            document.querySelectorAll('#season-summer, #season-winter').forEach(el => el.classList.remove('selected'));
+            document.getElementById(`season-${season}`).classList.add('selected');
+            
+            document.getElementById('result-box').classList.add('hidden');
+            resetChart();
+            updateCageVisual(8, 25, false); // 預設 8:00
+        }
+
+        // 設備開關 (模擬中可以操作)
+        function toggleEquip(item) {
+            equipment[item] = !equipment[item];
+            const btn = document.getElementById(`toggle-${item}`);
+            const text = btn.querySelector('.status-text');
+            
+            if (equipment[item]) {
+                btn.classList.add('active');
+                text.innerText = "ON";
+            } else {
+                btn.classList.remove('active');
+                text.innerText = "OFF";
+            }
+            // 立即更新視覺
+            updateCageIcons(); 
+        }
+
+        // 使用資源 (限一次)
+        function useResource(type) {
+            if (!isSimulating) {
+                alert("請先按開始模擬再給予資源！");
+                return;
+            }
+            if (resources[type]) return; // 已使用
+
+            resources[type] = true;
+            const btn = document.getElementById(`btn-${type}`);
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            btn.innerHTML += `<span class='block text-[10px]'>(已使用)</span>`;
+
+            // 立即顯示圖示
+            const visual = document.getElementById(`visual-${type}`);
+            visual.classList.remove('hidden');
+            visual.classList.add('opacity-100');
+            
+            // 1秒後淡出
+            setTimeout(() => {
+                visual.classList.add('opacity-0');
+                setTimeout(() => visual.classList.add('hidden'), 1000);
+            }, 1500);
+
+            // 若是食物，立即增加體溫一點點
+            if (type === 'food') {
+                // 效果在下一個 simulateStep 體現
+            }
+        }
+
+        function updateCageIcons() {
+            const show = (id, visible) => {
+                const el = document.getElementById(id);
+                if(visible) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            };
+            show('visual-lamp', equipment.lamp);
+            show('visual-slate', equipment.slate);
+            show('visual-ac', equipment.ac);
+            // 食物水由 useResource 控制顯示
+        }
+
+        function resetChart() {
+            const l1 = document.getElementById('line-env');
+            const l2 = document.getElementById('line-body');
+            if(l1) l1.setAttribute('points', '');
+            if(l2) l2.setAttribute('points', '');
+            document.getElementById('clock-display').innerText = "08:00";
+            document.getElementById('cage-container').classList.remove('warning-active');
+            document.getElementById('temp-warning').classList.add('hidden');
+        }
+
+        // --- 核心模擬邏輯 ---
+        function startSimulationLoop() {
+            if (!currentPet) { alert("請先選擇寵物！"); return; }
+            if (!currentSeason) { alert("請先選擇季節！"); return; }
+            if (isSimulating) return;
+
+            // 初始化狀態
+            isSimulating = true;
+            equipment = { lamp: false, slate: false, ac: false }; 
+            // 重置按鈕狀態為 OFF
+            ['lamp', 'slate', 'ac'].forEach(k => {
+                equipment[k] = false;
+                document.getElementById(`toggle-${k}`).classList.remove('active');
+                document.getElementById(`toggle-${k}`).querySelector('.status-text').innerText = "OFF";
+            });
+            updateCageIcons();
+
+            // 重置資源
+            resources = { food: false, water: false };
+            ['food', 'water'].forEach(k => {
+                const btn = document.getElementById(`btn-${k}`);
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+                // 移除 (已使用) 文字
+                const originalText = k === 'food' ? '給食物' : '給水';
+                const icon = k === 'food' ? 'fa-bowl-food' : 'fa-glass-water';
+                const color = k === 'food' ? 'text-orange-600' : 'text-blue-400';
+                btn.innerHTML = `<i class="fa-solid ${icon} text-2xl ${color}"></i><span class="text-xs font-bold">${originalText}</span>`;
+            });
+            
+            document.getElementById('btn-start').innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 模擬中...';
+            document.getElementById('btn-start').classList.add('opacity-75', 'cursor-not-allowed');
+            document.getElementById('result-box').classList.add('hidden');
+            resetChart();
+            
+            simData = {
+                env: [],
+                body: [],
+                hour: 0,
+                health: 100,
+                isDead: false,
+                deathReason: ""
+            };
+
+            // 執行
+            simulateStep();
+            simInterval = setInterval(simulateStep, 3000); // 3秒一跳 (記錄一次)
+        }
+
+        function simulateStep() {
+            const h = simData.hour; // 經過的小時數 (0, 1, 2...)
+            const config = petsData[currentPet];
+            
+            // 計算當前真實時間 (從 8:00 開始)
+            const startHour = 8;
+            const realHour = (startHour + h) % 24;
+
+            let tEnv;
+            if (currentSeason === 'summer') {
+                // 夏天設定調整：
+                // 目標：08:00 (Start) = 26度
+                // 目標：16:00 (Peak) = 約39.5度 (累積熱能，延後峰值，致死)
+                // 目標：04:00 (Low) = 約21.5度 (夜晚安全)
+                // 數學：Base 30.5, Amp 9, Phase Shift Peak at 16:00
+                const summerCycle = Math.cos((realHour - 16) / 24 * 2 * Math.PI);
+                tEnv = 30.5 + (summerCycle * 9); 
+            } else {
+                // 冬天設定：
+                // 基準 20，振幅 7。
+                // 14:00 (Peak) = 27度 (舒適)
+                // 02:00 (Low) = 13度 (致死)
+                // 08:00 (Start) = 20度 (安全)
+                const winterCycle = Math.cos((realHour - 14) / 24 * 2 * Math.PI);
+                tEnv = 20 + (winterCycle * 7);
+            }
+
+            // 設備影響環境/有效溫度
+            if (equipment.ac) tEnv -= 15; // 冷氣強力降溫
+            if (equipment.lamp) tEnv += 10; // 燈強力加溫
+
+            // 2. 計算體溫 (Body Temp)
+            let bodyTemp = tEnv;
+
+            // 食物產熱
+            if (resources.food) bodyTemp += 2; 
+
+            // 石板屋效果：讓體溫往 25 度拉回 30% (保溫/隔熱)
+            if (equipment.slate) {
+                bodyTemp = bodyTemp * 0.7 + 25 * 0.3;
+            }
+
+            // 3. 判定與紀錄
+            simData.env.push(tEnv);
+            simData.body.push(bodyTemp);
+
+            // 視覺更新
+            updateChartDisplay();
+            updateCageVisual(realHour, bodyTemp, true);
+            document.getElementById('clock-display').innerText = `${realHour.toString().padStart(2, '0')}:00`;
+
+            // 4. 生死判定
+            if (bodyTemp < config.deadLow) {
+                simData.isDead = true; 
+                simData.deathReason = `凍死 (< ${config.deadLow}°C)`;
+            } else if (bodyTemp > config.deadHigh) {
+                simData.isDead = true; 
+                simData.deathReason = `熱死 (> ${config.deadHigh}°C)`;
+            }
+
+            // 結束檢查
+            if (simData.isDead || h >= 24) {
+                clearInterval(simInterval);
+                isSimulating = false;
+                showResult();
+                document.getElementById('btn-start').innerHTML = '<i class="fa-solid fa-play mr-2"></i> 開始 24 小時模擬';
+                document.getElementById('btn-start').classList.remove('opacity-75', 'cursor-not-allowed');
+            } else {
+                simData.hour++;
+            }
+        }
+
+        function updateChartDisplay() {
+            const envLine = document.getElementById('line-env');
+            const bodyLine = document.getElementById('line-body');
+            
+            // 對應到 viewBox 600 x 250
+            const getPoints = (data) => data.map((t, i) => {
+                const x = (i / 24) * 600;
+                const y = 250 - (t / 50) * 250;
+                return `${x},${y}`;
+            }).join(' ');
+
+            envLine.setAttribute('points', getPoints(simData.env));
+            bodyLine.setAttribute('points', getPoints(simData.body));
+        }
+
+        function updateCageVisual(realHour, bodyTemp, checkWarning) {
+            const bg = document.getElementById('cage-bg');
+            const petContainer = document.getElementById('visual-pet-container');
+            const config = petsData[currentPet] || petsData['gecko'];
+            const cageDiv = document.getElementById('cage-container');
+            const warnBadge = document.getElementById('temp-warning');
+
+            // 背景日夜
+            if (realHour >= 6 && realHour <= 18) {
+                // Day
+                bg.style.filter = "brightness(1)";
+            } else {
+                // Night
+                bg.style.filter = "brightness(0.4)";
+            }
+
+            // 寵物狀態與位置
+            petContainer.className = "absolute bottom-2 left-1/2 -translate-x-1/2 transition-all duration-1000 z-30";
+            
+            // 石板屋位置調整
+            if (equipment.slate) {
+                petContainer.style.bottom = "10px"; // 躲進屋子
+                petContainer.style.transform = "translateX(-50%) scale(0.6)"; // 縮小表示進屋
+            }
+
+            // 警告與顏色濾鏡
+            let isSafe = true;
+            if (checkWarning) {
+                if (bodyTemp < config.ideal[0]) {
+                    // 冷
+                    petContainer.style.filter = "hue-rotate(180deg) brightness(0.8)"; 
+                    isSafe = false;
+                } else if (bodyTemp > config.ideal[1]) {
+                    // 熱
+                    petContainer.style.filter = "hue-rotate(-45deg) saturate(2)"; 
+                    isSafe = false;
+                } else {
+                    petContainer.style.filter = "none";
+                }
+
+                if (!isSafe) {
+                    cageDiv.classList.add('warning-active');
+                    warnBadge.classList.remove('hidden');
+                } else {
+                    cageDiv.classList.remove('warning-active');
+                    warnBadge.classList.add('hidden');
+                }
+            }
+        }
+
+        function showResult() {
+            const box = document.getElementById('result-box');
+            const title = document.getElementById('result-title');
+            const desc = document.getElementById('result-desc');
+            const seasonCard = document.getElementById(`season-${currentSeason}`);
+
+            box.classList.remove('hidden', 'bg-red-50', 'bg-green-50', 'border-red-400', 'border-green-400');
+            box.classList.remove('text-red-800', 'text-green-800');
+
+            if (simData.isDead) {
+                box.classList.add('bg-red-50', 'border-red-400', 'text-red-800');
+                title.innerHTML = `<i class="fa-solid fa-skull-crossbones"></i> 失敗：${simData.deathReason}`;
+                desc.innerText = `很遺憾，${petsData[currentPet].name} 未能撐過${currentSeason === 'summer' ? '酷暑' : '嚴寒'}。請善用設備調整溫度！`;
+            } else {
+                box.classList.add('bg-green-50', 'border-green-400', 'text-green-800');
+                title.innerHTML = `<i class="fa-solid fa-check-circle"></i> 生存成功！`;
+                desc.innerText = `太棒了！你成功控制了溫度，讓寵物度過了難關。`;
+                
+                clearedSeasons.add(currentSeason);
+                seasonCard.classList.add('passed');
+                checkAllPass();
+            }
+        }
+
+        function checkAllPass() {
+            // 夏天與冬天都通關
+            if (clearedSeasons.has('summer') && clearedSeasons.has('winter')) {
+                const section = document.getElementById('assessment-section');
+                section.classList.remove('opacity-50', 'pointer-events-none', 'filter', 'blur-sm');
+                section.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // --- 評量區 ---
+        function checkQuiz() {
+            const q1Val = document.querySelector('input[name="q1"]:checked')?.value;
+            const ans2 = document.getElementById('ans2').value.trim();
+            const fb1 = document.getElementById('fb-q1');
+            const fb2 = document.getElementById('fb-q2');
+            let correct = 0;
+
+            fb1.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+            if (q1Val === 'B') {
+                fb1.innerHTML = "⭕ 正確！";
+                fb1.classList.add('bg-green-100', 'text-green-700');
+                correct++;
+            } else {
+                fb1.innerHTML = "❌ 錯誤，牛奶蛇適合範圍較低窄。";
+                fb1.classList.add('bg-red-100', 'text-red-700');
+            }
+
+            const validKeys = ['行為', '移動', '位置', '選擇', '躲藏', '曬太陽'];
+            fb2.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+            if (validKeys.some(k => ans2.includes(k))) {
+                fb2.innerHTML = "⭕ 正確！(行為調節)";
+                fb2.classList.add('bg-green-100', 'text-green-700');
+                correct++;
+            } else {
+                fb2.innerHTML = "❌ 關鍵字：行為、移動。";
+                fb2.classList.add('bg-red-100', 'text-red-700');
+            }
+
+            if (correct === 2) {
+                const btn = document.getElementById('next-btn');
+                const msg = document.getElementById('final-msg');
+                btn.classList.remove('btn-locked');
+                btn.classList.add('animate-bounce');
+                msg.innerHTML = '<i class="fa-solid fa-certificate text-green-600"></i> 通關成功！';
+                msg.className = "text-green-600 text-lg mb-4 font-bold";
+            }
+        }
+    </script>
+</body>
+</html>

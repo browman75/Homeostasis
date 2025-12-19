@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>急診室醫師 | 恆定性總部</title>
+    
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- 自定義樣式 -->
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f1f5f9; /* Slate-100 */
+            color: #1e293b; /* Slate-800 */
+            font-size: 18px; /* 基礎大字體 */
+            line-height: 1.6;
+        }
+
+        /* 區塊通用樣式 */
+        .learning-section {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        /* 評量區塊樣式 */
+        .quiz-block {
+            background-color: #f0f9ff; /* Sky-50 */
+            border-left: 8px solid #0ea5e9; /* Sky-500 */
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-radius: 0.75rem;
+        }
+
+        /* 病人對話框動畫 */
+        .bubble {
+            position: relative;
+            background: #e2e8f0;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .bubble::after {
+            content: '';
+            position: absolute;
+            left: 20px;
+            bottom: -20px;
+            border: 10px solid transparent;
+            border-top-color: #e2e8f0;
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* 選項按鈕 */
+        .action-btn {
+            transition: all 0.2s;
+            border-width: 3px;
+        }
+        .action-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 鎖定按鈕 */
+        .btn-locked {
+            background-color: #cbd5e1 !important;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* 填空題輸入框 */
+        .quiz-input {
+            border: none;
+            border-bottom: 3px solid #94a3b8;
+            background: transparent;
+            text-align: center;
+            color: #0369a1;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 0 0.5rem;
+            width: 120px;
+            transition: all 0.3s;
+        }
+        .quiz-input:focus {
+            outline: none;
+            border-bottom-color: #0ea5e9;
+            background-color: #e0f2fe;
+        }
+        .quiz-input:disabled {
+            background-color: #f1f5f9;
+            border-bottom-color: #cbd5e1;
+            color: #64748b;
+        }
+        
+        /* 震動動畫 (答錯用) */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake {
+            animation: shake 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- 導航列 -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-red-500 text-white w-10 h-10 rounded-xl flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-user-doctor"></i>
+                </div>
+                <h1 class="font-bold text-2xl tracking-wide text-slate-800">急診室醫師</h1>
+            </div>
+            <div class="text-base font-medium text-slate-600 bg-slate-100 px-4 py-2 rounded-lg">單元 4：總結評量</div>
+        </div>
+    </nav>
+
+    <main class="flex-grow w-full max-w-5xl mx-auto p-4 md:p-8 space-y-12">
+        
+        <!-- 任務說明 -->
+        <section class="learning-section bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100">
+            <div class="flex flex-col md:flex-row items-center gap-6">
+                <div class="bg-white p-4 rounded-full shadow-lg text-5xl text-blue-500">
+                    <i class="fa-solid fa-stethoscope"></i>
+                </div>
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-800 mb-2">今日任務：恆定性門診</h2>
+                    <p class="text-xl text-slate-600">
+                        你是值班醫師。稍後會有病人進來描述身體狀況。請運用你在前面單元學到的知識，判斷他們發生了什麼事，並給予正確的治療建議！
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 遊戲主區塊 -->
+        <section class="learning-section relative overflow-hidden">
+            <!-- 進度條 -->
+            <div class="absolute top-0 left-0 w-full h-2 bg-slate-100">
+                <div id="progress-bar" class="h-full bg-green-500 transition-all duration-500" style="width: 0%"></div>
+            </div>
+
+            <div class="flex justify-between items-center mb-8 mt-2">
+                <h3 class="text-2xl font-bold text-slate-800">
+                    <i class="fa-solid fa-bed-pulse text-red-400 mr-2"></i> 
+                    診間狀態：<span id="patient-count">病人 1 / 2</span>
+                </h3>
+                <div id="score-badge" class="hidden bg-yellow-100 text-yellow-800 px-4 py-1 rounded-full font-bold">
+                    <i class="fa-solid fa-star"></i> 診斷成功
+                </div>
+            </div>
+
+            <!-- 病人展示區 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 min-h-[300px]">
+                <!-- 左側：病人形象 -->
+                <div class="col-span-1 flex flex-col items-center justify-center bg-slate-50 rounded-2xl border-2 border-slate-200 p-6">
+                    <div id="patient-avatar" class="text-9xl text-slate-400 mb-4 transition-colors duration-500">
+                        <i class="fa-solid fa-person"></i>
+                    </div>
+                    <div id="patient-status" class="font-bold text-xl text-slate-500">等待叫號...</div>
+                </div>
+
+                <!-- 右側：對話與操作 -->
+                <div class="col-span-2 flex flex-col justify-between">
+                    <!-- 對話框 -->
+                    <div class="mb-6">
+                        <div id="dialogue-box" class="bubble text-xl font-medium text-slate-700">
+                            （點擊下方按鈕開始看診...）
+                        </div>
+                    </div>
+
+                    <!-- 操作面板 -->
+                    <div id="action-panel" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button onclick="startGame()" class="col-span-2 bg-blue-600 text-white py-4 rounded-xl font-bold text-xl hover:bg-blue-700 shadow-lg action-btn">
+                            <i class="fa-solid fa-bell"></i> 下一位病人請進
+                        </button>
+                    </div>
+
+                    <!-- 診斷選項 (初始隱藏) -->
+                    <div id="diagnosis-options" class="hidden grid-cols-1 md:grid-cols-2 gap-4">
+                        <button onclick="makeDiagnosis('cold')" class="bg-blue-100 border-blue-300 text-blue-800 py-4 rounded-xl font-bold text-lg hover:bg-blue-200 action-btn">
+                            <i class="fa-solid fa-snowflake mr-2"></i> 診斷：失溫 (太冷)<br>
+                            <span class="text-sm font-normal">處方：喝熱水、加衣物</span>
+                        </button>
+                        <button onclick="makeDiagnosis('hot')" class="bg-red-100 border-red-300 text-red-800 py-4 rounded-xl font-bold text-lg hover:bg-red-200 action-btn">
+                            <i class="fa-solid fa-fire mr-2"></i> 診斷：過熱 (太熱)<br>
+                            <span class="text-sm font-normal">處方：休息、補充水分、散熱</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 診斷結果回饋 -->
+            <div id="diagnosis-feedback" class="hidden mt-6 p-6 rounded-xl border-2 text-xl font-bold"></div>
+        </section>
+
+        <!-- 總結評量區 (填空題) -->
+        <section id="final-quiz" class="learning-section opacity-50 pointer-events-none filter blur-sm transition-all duration-1000">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="bg-blue-600 text-white text-base px-3 py-1 rounded-lg font-bold">醫師國考</span>
+                <h2 class="text-3xl font-bold text-slate-800">總結觀念測驗</h2>
+            </div>
+            <p class="text-slate-600 mb-8 text-xl">
+                請根據剛剛的看診經驗，完成下列病歷報告（填空題）。<br>
+                <span class="text-sm text-slate-400">* 完成上方所有看診後解鎖</span>
+            </p>
+
+            <div class="space-y-8">
+                <!-- 題目 1 -->
+                <div class="quiz-block">
+                    <label class="block text-slate-800 font-bold mb-4 leading-loose text-xl">
+                        1. <span class="text-blue-600">病人 A</span> 臉色蒼白且全身發抖。這是因為在寒冷環境中，皮膚血管
+                        <input type="text" id="ans1" class="quiz-input" placeholder="填寫動詞">
+                        以減少散熱，且肌肉顫抖以產生熱能。
+                    </label>
+                    <div id="fb-ans1" class="hidden font-bold mt-2"></div>
+                </div>
+
+                <!-- 題目 2 -->
+                <div class="quiz-block border-l-red-500 bg-red-50">
+                    <label class="block text-slate-800 font-bold mb-4 leading-loose text-xl">
+                        2. <span class="text-red-600">病人 B</span> 滿臉通紅且大汗淋漓。這是因為在炎熱環境中，皮膚血管
+                        <input type="text" id="ans2" class="quiz-input" placeholder="填寫動詞">
+                        以增加血流量散熱，並透過流汗帶走體熱。
+                    </label>
+                    <div id="fb-ans2" class="hidden font-bold mt-2"></div>
+                </div>
+
+                <div class="flex justify-center mt-8">
+                    <button onclick="checkFinalQuiz()" class="bg-slate-800 text-white px-10 py-4 rounded-full text-xl font-bold hover:bg-slate-700 shadow-xl transform hover:-translate-y-1 transition action-btn">
+                        提交病歷報告
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 頁尾導航 -->
+        <div class="text-center pb-16">
+            <p id="final-msg" class="text-slate-500 text-lg mb-6 font-medium">
+                <i class="fa-solid fa-lock"></i> 請先通過醫師國考以取得執照
+            </p>
+            <a id="next-btn" href="t5.html" class="btn-locked inline-flex items-center gap-3 bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-12 rounded-full shadow-xl transition-all transform active:scale-95 text-xl">
+                獲得執照，前往結業 <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+
+    </main>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        // --- 遊戲資料 ---
+        const patients = [
+            {
+                id: 1,
+                symptoms: "醫生...我覺得好冷...我的牙齒一直在打架（發抖），而且手腳都冰冰的，臉色看起來很蒼白。",
+                visualClass: "text-blue-400 animate-pulse",
+                icon: "fa-person-snowboarding",
+                type: "cold",
+                diagnosisMsg: "⭕ 診斷正確！<br>病人處於低溫環境。血管收縮導致臉色蒼白，肌肉顫抖是為了產熱。喝熱水有助於恢復體溫。",
+                feedbackClass: "bg-green-100 text-green-800 border-green-300"
+            },
+            {
+                id: 2,
+                symptoms: "呼...呼...醫生，我剛跑完步，覺得頭好暈，臉好燙（潮紅），汗一直流停不下來...",
+                visualClass: "text-red-500",
+                icon: "fa-person-running",
+                type: "hot",
+                diagnosisMsg: "⭕ 診斷正確！<br>病人處於高溫/運動後狀態。血管擴張導致臉紅，流汗是為了散熱。需要補充水分並休息。",
+                feedbackClass: "bg-green-100 text-green-800 border-green-300"
+            }
+        ];
+
+        let currentPatientIndex = 0;
+        let isGameComplete = false;
+
+        // --- 遊戲邏輯 ---
+        function startGame() {
+            // 隱藏開始按鈕
+            document.getElementById('action-panel').classList.add('hidden');
+            loadPatient(currentPatientIndex);
+        }
+
+        function loadPatient(index) {
+            const p = patients[index];
+            
+            // 更新進度與 UI
+            document.getElementById('patient-count').innerText = `病人 ${index + 1} / ${patients.length}`;
+            document.getElementById('progress-bar').style.width = `${(index / patients.length) * 100}%`;
+            
+            // 重置回饋區
+            const fb = document.getElementById('diagnosis-feedback');
+            fb.classList.add('hidden');
+            fb.className = "hidden mt-6 p-6 rounded-xl border-2 text-xl font-bold";
+
+            // 設定病人外觀與對話
+            const avatar = document.getElementById('patient-avatar');
+            avatar.className = `text-9xl mb-4 transition-colors duration-500 ${p.visualClass}`;
+            avatar.innerHTML = `<i class="fa-solid ${p.icon}"></i>`;
+            
+            document.getElementById('patient-status').innerText = "看診中...";
+            
+            // 打字機效果顯示對話
+            const dialogueBox = document.getElementById('dialogue-box');
+            dialogueBox.innerText = "";
+            let i = 0;
+            const typeWriter = setInterval(() => {
+                if (i < p.symptoms.length) {
+                    dialogueBox.innerText += p.symptoms.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(typeWriter);
+                    // 顯示選項
+                    document.getElementById('diagnosis-options').classList.remove('hidden');
+                    document.getElementById('diagnosis-options').classList.add('grid');
+                }
+            }, 30); // 打字速度
+        }
+
+        function makeDiagnosis(diagnosisType) {
+            const p = patients[currentPatientIndex];
+            const fb = document.getElementById('diagnosis-feedback');
+            const options = document.getElementById('diagnosis-options');
+
+            // 隱藏選項
+            options.classList.add('hidden');
+            options.classList.remove('grid');
+
+            fb.classList.remove('hidden');
+
+            if (diagnosisType === p.type) {
+                // 答對
+                fb.innerHTML = p.diagnosisMsg;
+                fb.className = `mt-6 p-6 rounded-xl border-2 text-xl font-bold ${p.feedbackClass}`;
+                
+                // 準備下一位
+                setTimeout(() => {
+                    nextPatient();
+                }, 3000);
+            } else {
+                // 答錯
+                fb.innerHTML = "❌ 診斷錯誤！<br>請再仔細觀察病人的症狀（臉色、流汗/發抖）。";
+                fb.className = "mt-6 p-6 rounded-xl border-2 text-xl font-bold bg-red-100 text-red-800 border-red-300 shake";
+                
+                // 重新顯示選項
+                setTimeout(() => {
+                    options.classList.remove('hidden');
+                    options.classList.add('grid');
+                    fb.classList.add('hidden');
+                    fb.classList.remove('shake');
+                }, 2000);
+            }
+        }
+
+        function nextPatient() {
+            currentPatientIndex++;
+            if (currentPatientIndex < patients.length) {
+                loadPatient(currentPatientIndex);
+            } else {
+                // 全部完成
+                completeGame();
+            }
+        }
+
+        function completeGame() {
+            isGameComplete = true;
+            document.getElementById('progress-bar').style.width = "100%";
+            document.getElementById('patient-count').innerText = "看診結束";
+            document.getElementById('dialogue-box').innerText = "辛苦了，醫生！所有病人都已得到妥善照顧。請填寫下方的病歷報告（測驗）以完成值班。";
+            document.getElementById('patient-status').innerText = "休息中";
+            document.getElementById('patient-avatar').className = "text-9xl text-green-500 mb-4";
+            document.getElementById('patient-avatar').innerHTML = '<i class="fa-solid fa-user-md"></i>';
+            document.getElementById('diagnosis-feedback').classList.add('hidden');
+
+            // 解鎖測驗區
+            const quizSection = document.getElementById('final-quiz');
+            quizSection.classList.remove('opacity-50', 'pointer-events-none', 'filter', 'blur-sm');
+            
+            // 滾動到測驗區
+            setTimeout(() => {
+                quizSection.scrollIntoView({ behavior: 'smooth' });
+            }, 500);
+        }
+
+        // --- 評量邏輯 ---
+        function checkFinalQuiz() {
+            const ans1 = document.getElementById('ans1').value.trim();
+            const ans2 = document.getElementById('ans2').value.trim();
+            const fb1 = document.getElementById('fb-ans1');
+            const fb2 = document.getElementById('fb-ans2');
+            
+            let isCorrect1 = false;
+            let isCorrect2 = false;
+
+            // 關鍵字檢查 (模糊比對)
+            const keywords1 = ['收縮'];
+            const keywords2 = ['擴張', '舒張'];
+
+            // 檢查第一題
+            if (keywords1.some(k => ans1.includes(k))) {
+                isCorrect1 = true;
+                fb1.innerText = "⭕ 正確！血管收縮以保暖。";
+                fb1.className = "font-bold mt-2 text-green-600 text-lg";
+                document.getElementById('ans1').disabled = true;
+            } else {
+                fb1.innerText = "❌ 錯誤。提示：管徑變小，減少血流量。";
+                fb1.className = "font-bold mt-2 text-red-500 text-lg";
+            }
+            fb1.classList.remove('hidden');
+
+            // 檢查第二題
+            if (keywords2.some(k => ans2.includes(k))) {
+                isCorrect2 = true;
+                fb2.innerText = "⭕ 正確！血管擴張以散熱。";
+                fb2.className = "font-bold mt-2 text-green-600 text-lg";
+                document.getElementById('ans2').disabled = true;
+            } else {
+                fb2.innerText = "❌ 錯誤。提示：管徑變大，增加血流量。";
+                fb2.className = "font-bold mt-2 text-red-500 text-lg";
+            }
+            fb2.classList.remove('hidden');
+
+            // 全部答對
+            if (isCorrect1 && isCorrect2) {
+                const btn = document.getElementById('next-btn');
+                const msg = document.getElementById('final-msg');
+                
+                btn.classList.remove('btn-locked');
+                btn.classList.add('animate-bounce');
+                
+                msg.innerHTML = '<i class="fa-solid fa-certificate text-yellow-500"></i> 恭喜！您已通過國考，取得醫師執照。';
+                msg.className = "text-green-600 text-xl font-bold mb-6";
+                
+                // 慶祝動畫
+                confettiEffect();
+            }
+        }
+
+        // 簡單的慶祝效果 (改變背景色閃爍)
+        function confettiEffect() {
+            const body = document.body;
+            body.style.transition = "background-color 0.5s";
+            body.style.backgroundColor = "#dcfce7"; // Light green
+            setTimeout(() => {
+                body.style.backgroundColor = "#f1f5f9"; // Back to slate
+            }, 1000);
+        }
+
+    </script>
+</body>
+</html>

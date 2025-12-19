@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>恆定性總部 | 生物學習網</title>
+    
+    <!-- 引入 Google Fonts: Noto Sans TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- 自定義樣式 -->
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f1f5f9; /* Slate-100 */
+            color: #334155; /* Slate-700 */
+        }
+
+        /* 動態平衡天平動畫 */
+        .balance-scale {
+            transform-origin: center bottom;
+            animation: swing 3s ease-in-out infinite;
+        }
+        @keyframes swing {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(5deg); }
+            50% { transform: rotate(0deg); }
+            75% { transform: rotate(-5deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        /* 互動選取狀態 */
+        .tool-selected {
+            ring-4 ring-offset-2 ring-blue-500 bg-blue-50 border-blue-500 !important;
+            transform: translateY(-5px);
+        }
+
+        /* 任務卡片成功狀態 */
+        .task-solved {
+            border-color: #22c55e !important; /* Green-500 */
+            background-color: #f0fdf4 !important; /* Green-50 */
+        }
+        
+        /* 填空題輸入框樣式 */
+        .quiz-input {
+            border: none;
+            border-bottom: 2px solid #94a3b8;
+            background: transparent;
+            text-align: center;
+            color: #2563eb;
+            font-weight: bold;
+            padding: 0 5px;
+            width: 100px;
+            transition: all 0.3s;
+        }
+        .quiz-input:focus {
+            outline: none;
+            border-bottom-color: #2563eb;
+        }
+        .quiz-input:disabled {
+            background-color: #e2e8f0;
+            cursor: not-allowed;
+            border-bottom: none;
+        }
+
+        /* 下一頁按鈕鎖定狀態 */
+        .btn-locked {
+            background-color: #cbd5e1;
+            color: #94a3b8;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+        }
+
+        /* 心跳動畫 */
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .heart-beat-slow {
+            animation: heartbeat 1s infinite;
+        }
+        .heart-beat-fast {
+            animation: heartbeat 0.4s infinite;
+        }
+
+        /* 呼吸動畫 */
+        @keyframes breathe {
+            0% { transform: scaleY(1); opacity: 0.6; }
+            50% { transform: scaleY(1.1); opacity: 0.9; }
+            100% { transform: scaleY(1); opacity: 0.6; }
+        }
+        .lung-breathe-slow {
+            animation: breathe 3s infinite ease-in-out;
+        }
+        .lung-breathe-fast {
+            animation: breathe 1s infinite ease-in-out;
+        }
+
+        /* 跑步小人動畫 */
+        @keyframes run {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
+        .runner {
+            animation: run 0.3s infinite;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- 頁首導航 -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                </div>
+                <h1 class="font-bold text-lg tracking-wide text-slate-800">恆定性總部</h1>
+            </div>
+            <div class="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">單元 1：基本概念</div>
+        </div>
+    </nav>
+
+    <!-- 主要內容區 -->
+    <main class="flex-grow w-full max-w-4xl mx-auto p-4 md:p-8 space-y-10">
+        
+        <!-- 第一部分：觀念展示 (動態平衡) -->
+        <section class="bg-white rounded-2xl shadow-sm p-6 md:p-8 border border-slate-100 flex flex-col md:flex-row items-center gap-8">
+            <div class="w-full md:w-1/2 flex justify-center py-6">
+                <!-- 純 CSS 繪製的天平示意圖 -->
+                <div class="relative w-64 h-40">
+                    <!-- 底座 -->
+                    <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-4 h-24 bg-slate-300 rounded-t-lg z-10"></div>
+                    <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-32 h-4 bg-slate-400 rounded-full z-10"></div>
+                    <!-- 搖擺桿 -->
+                    <div class="balance-scale absolute top-10 left-0 w-full h-2 bg-indigo-500 rounded-full flex justify-between items-center z-20">
+                        <!-- 左盤 (生理數值) -->
+                        <div class="w-16 h-16 rounded-full bg-blue-100 border-4 border-blue-400 flex items-center justify-center -mt-8 -ml-4 shadow-lg">
+                            <i class="fa-solid fa-droplet text-blue-500 text-xl"></i>
+                        </div>
+                        <!-- 中心支點 -->
+                        <div class="w-4 h-4 bg-white rounded-full border-2 border-indigo-600 absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                        <!-- 右盤 (環境變化) -->
+                        <div class="w-16 h-16 rounded-full bg-orange-100 border-4 border-orange-400 flex items-center justify-center -mt-8 -mr-4 shadow-lg">
+                            <i class="fa-solid fa-temperature-high text-orange-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="w-full md:w-1/2">
+                <h2 class="text-2xl font-bold text-slate-800 mb-3">什麼是恆定性？</h2>
+                <div class="space-y-3 text-slate-600 leading-relaxed">
+                    <p>
+                        你的身體就像這座天平。外在環境（如天氣變冷）或內部狀態（如運動後缺水）不斷在改變。
+                    </p>
+                    <p>
+                        <strong class="text-indigo-600">恆定性 (Homeostasis)</strong> 不是指身體狀況「固定不變」，而是透過調節，將體溫、水分、血糖等維持在<strong class="text-indigo-600">特定範圍內的動態平衡</strong>。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第二部分：恆定性管什麼？ (互動學習區) -->
+        <section class="bg-white rounded-2xl shadow-sm p-6 md:p-8 border border-slate-100">
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-shield-heart text-red-500"></i> 恆定性的三大重點
+            </h2>
+            <p class="text-slate-600 mb-6 text-sm">我們的身體主要針對以下三項進行調節，請點擊卡片查看細節：</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- 體溫 -->
+                <div class="group bg-orange-50 p-5 rounded-xl border border-orange-100 text-center hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-default">
+                    <div class="w-14 h-14 mx-auto bg-white rounded-full flex items-center justify-center shadow-sm mb-3 text-2xl text-orange-500 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-temperature-half"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-slate-700">體溫</h3>
+                    <div class="mt-2 text-sm text-slate-500">
+                        <span class="block mb-1">維持酵素活性</span>
+                        <span class="font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">約 36~37.5°C</span>
+                    </div>
+                </div>
+
+                <!-- 水分 -->
+                <div class="group bg-blue-50 p-5 rounded-xl border border-blue-100 text-center hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-default">
+                    <div class="w-14 h-14 mx-auto bg-white rounded-full flex items-center justify-center shadow-sm mb-3 text-2xl text-blue-500 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-droplet"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-slate-700">水分</h3>
+                    <div class="mt-2 text-sm text-slate-500">
+                        <span class="block mb-1">維持細胞濃度</span>
+                        <span class="font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">喝多排多/喝少排少</span>
+                    </div>
+                </div>
+
+                <!-- 血糖 -->
+                <div class="group bg-pink-50 p-5 rounded-xl border border-pink-100 text-center hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-default">
+                    <div class="w-14 h-14 mx-auto bg-white rounded-full flex items-center justify-center shadow-sm mb-3 text-2xl text-pink-500 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-cube"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-slate-700">血糖</h3>
+                    <div class="mt-2 text-sm text-slate-500">
+                        <span class="block mb-1">細胞能量來源</span>
+                        <span class="font-bold text-pink-600 bg-pink-100 px-2 py-0.5 rounded-full">胰島素調節</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第三部分：運動生理模擬器 (新增功能) -->
+        <section class="bg-slate-800 rounded-2xl shadow-lg p-6 md:p-8 text-white">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded font-bold">動態調節實例</span>
+                <h3 class="text-xl font-bold">運動生理模擬器</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <!-- 左側：角色與控制 -->
+                <div class="flex flex-col items-center">
+                    <!-- 狀態顯示區 -->
+                    <div class="relative w-40 h-40 mb-6 flex items-center justify-center">
+                        <div id="sim-avatar-bg" class="absolute w-full h-full bg-slate-700 rounded-full transition-colors duration-500"></div>
+                        <i id="sim-avatar" class="fa-solid fa-person text-6xl text-white relative z-10 transition-all duration-300"></i>
+                        <!-- 汗水動畫 -->
+                        <div id="sim-sweat" class="hidden absolute top-0 right-10 text-blue-300 text-xl animate-bounce">
+                            <i class="fa-solid fa-droplet"></i>
+                        </div>
+                    </div>
+
+                    <!-- 控制按鈕 -->
+                    <div class="flex gap-4">
+                        <button onclick="setSimulation('rest')" class="px-6 py-2 bg-green-600 hover:bg-green-500 rounded-full font-bold transition shadow-lg active:scale-95 flex items-center gap-2">
+                            <i class="fa-solid fa-mug-hot"></i> 休息
+                        </button>
+                        <button onclick="setSimulation('exercise')" class="px-6 py-2 bg-red-600 hover:bg-red-500 rounded-full font-bold transition shadow-lg active:scale-95 flex items-center gap-2">
+                            <i class="fa-solid fa-person-running"></i> 劇烈運動
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右側：儀表板與數據 -->
+                <div class="space-y-4">
+                    <!-- 狀態說明文字 -->
+                    <div id="sim-text" class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 text-sm leading-relaxed min-h-[80px]">
+                        目前處於<span class="text-green-400 font-bold">休息狀態</span>。體內氧氣需求量正常，心跳與呼吸維持在恆定值。
+                    </div>
+
+                    <!-- 儀表板 -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <!-- 心搏 -->
+                        <div class="bg-slate-700 p-3 rounded-lg text-center">
+                            <div class="text-xs text-slate-400 mb-1">脈搏 (次/分)</div>
+                            <div class="flex justify-center items-center gap-2">
+                                <i id="icon-heart" class="fa-solid fa-heart text-red-500 text-xl heart-beat-slow"></i>
+                                <span id="val-heart" class="text-2xl font-mono font-bold">72</span>
+                            </div>
+                        </div>
+                        <!-- 呼吸 -->
+                        <div class="bg-slate-700 p-3 rounded-lg text-center">
+                            <div class="text-xs text-slate-400 mb-1">呼吸 (次/分)</div>
+                            <div class="flex justify-center items-center gap-2">
+                                <i id="icon-lung" class="fa-solid fa-lungs text-blue-400 text-xl lung-breathe-slow"></i>
+                                <span id="val-breath" class="text-2xl font-mono font-bold">15</span>
+                            </div>
+                        </div>
+                        <!-- 血壓 -->
+                        <div class="bg-slate-700 p-3 rounded-lg text-center">
+                            <div class="text-xs text-slate-400 mb-1">血壓 (示意)</div>
+                            <div class="flex justify-center items-center gap-2">
+                                <i class="fa-solid fa-gauge-high text-yellow-400 text-xl"></i>
+                                <span id="val-bp" class="text-xl font-mono font-bold">正常</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 氣體濃度條 -->
+                    <div class="space-y-2 mt-2">
+                        <div class="flex justify-between text-xs text-slate-400">
+                            <span>氧氣消耗 (O₂)</span>
+                            <span id="label-o2">低</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2">
+                            <div id="bar-o2" class="bg-blue-500 h-2 rounded-full transition-all duration-1000" style="width: 30%"></div>
+                        </div>
+                        
+                        <div class="flex justify-between text-xs text-slate-400">
+                            <span>二氧化碳產生 (CO₂)</span>
+                            <span id="label-co2">低</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2">
+                            <div id="bar-co2" class="bg-orange-500 h-2 rounded-full transition-all duration-1000" style="width: 30%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第四部分：指揮官任務 (互動遊戲) -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded font-bold">互動任務</span>
+                <h3 class="text-xl font-bold text-slate-800">指揮官調度中心</h3>
+            </div>
+            <p class="text-slate-600 text-sm">請點擊下方的「傳令兵系統」，再點擊對應的「身體狀況」來解決問題。</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- 工具區 (傳令兵) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h4 class="font-bold text-slate-700 mb-4 text-center">選擇傳令兵</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- 神經系統按鈕 -->
+                        <button id="tool-nervous" onclick="selectTool('nervous')" class="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm border-2 border-transparent hover:border-indigo-200 transition-all cursor-pointer group">
+                            <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-500 flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-bolt"></i>
+                            </div>
+                            <div class="font-bold text-slate-700">神經系統</div>
+                            <div class="text-xs text-slate-400 mt-1">特色：快速、短暫</div>
+                        </button>
+
+                        <!-- 內分泌系統按鈕 -->
+                        <button id="tool-endocrine" onclick="selectTool('endocrine')" class="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm border-2 border-transparent hover:border-indigo-200 transition-all cursor-pointer group">
+                            <div class="w-12 h-12 rounded-full bg-pink-100 text-pink-500 flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-vial"></i>
+                            </div>
+                            <div class="font-bold text-slate-700">內分泌系統</div>
+                            <div class="text-xs text-slate-400 mt-1">特色：緩慢、持久</div>
+                        </button>
+                    </div>
+                    <div id="tool-hint" class="text-center text-sm text-indigo-500 font-bold mt-4 h-5 animate-pulse">
+                        請先選擇一個系統...
+                    </div>
+                </div>
+
+                <!-- 任務區 (情境) -->
+                <div class="space-y-4">
+                    <h4 class="font-bold text-slate-700 text-center">待解決狀況</h4>
+                    
+                    <!-- 任務 1 -->
+                    <div id="task-1" onclick="applyTool('task-1', 'nervous')" class="relative p-4 bg-white rounded-xl shadow-sm border-l-4 border-slate-300 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <div class="flex items-start gap-4">
+                            <div class="text-3xl">🔥</div>
+                            <div>
+                                <h5 class="font-bold text-slate-800">手不小心碰到熱水壺</h5>
+                                <p class="text-sm text-slate-500 mt-1">需要立刻縮手，避免受傷！</p>
+                            </div>
+                        </div>
+                        <div class="feedback-icon absolute right-4 top-1/2 -translate-y-1/2 text-2xl hidden"></div>
+                    </div>
+
+                    <!-- 任務 2 -->
+                    <div id="task-2" onclick="applyTool('task-2', 'endocrine')" class="relative p-4 bg-white rounded-xl shadow-sm border-l-4 border-slate-300 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <div class="flex items-start gap-4">
+                            <div class="text-3xl">📈</div>
+                            <div>
+                                <h5 class="font-bold text-slate-800">青春期身高快速長高</h5>
+                                <p class="text-sm text-slate-500 mt-1">需要長時間調控生長發育。</p>
+                            </div>
+                        </div>
+                        <div class="feedback-icon absolute right-4 top-1/2 -translate-y-1/2 text-2xl hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第五部分：評量檢核 -->
+        <section class="bg-white rounded-2xl shadow-lg border-t-4 border-indigo-500 p-6 md:p-8 mt-8">
+            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-question text-indigo-600"></i> 學習檢核站
+            </h3>
+            
+            <form id="quiz-form" class="space-y-6">
+                <!-- 題目 1 -->
+                <div class="p-4 bg-slate-50 rounded-lg">
+                    <label class="block text-slate-700 font-medium leading-loose">
+                        1. 根據上方的天平動畫，生物體內的恆定性並不是固定不變，而是維持在
+                        <input type="text" id="ans1" class="quiz-input" placeholder="四個字">
+                        內的動態平衡。
+                    </label>
+                </div>
+
+                <!-- 題目 2 -->
+                <div class="p-4 bg-slate-50 rounded-lg">
+                    <label class="block text-slate-700 font-medium leading-loose">
+                        2. 在指揮官任務中，我們發現「神經系統」的傳導速度比較
+                        <input type="text" id="ans2" class="quiz-input" placeholder="一個字">
+                        ，適合處理緊急狀況（如縮手）。
+                    </label>
+                </div>
+
+                <!-- 題目 3 (選擇題) -->
+                <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <label class="block text-slate-700 font-medium mb-3">
+                        3. (選擇題) 下列哪一個情境符合「恆定性」的定義？
+                    </label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                            <input type="radio" name="q3" value="A" class="w-5 h-5 text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-slate-600">不管環境多冷，體溫絕對固定在 36.5°C，小數點後完全不會變動。</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                            <input type="radio" name="q3" value="B" class="w-5 h-5 text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-slate-600">吃完大餐後血糖上升，身體分泌胰島素讓血糖回到正常範圍。</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                            <input type="radio" name="q3" value="C" class="w-5 h-5 text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-slate-600">天氣很熱時，身體會一直保留水分，完全不排尿以避免浪費。</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 訊息回饋區 -->
+                <div class="flex flex-col md:flex-row items-center justify-between pt-4 gap-4">
+                    <div id="quiz-feedback" class="text-sm font-bold text-slate-400">
+                        <i class="fa-solid fa-info-circle"></i> 請先完成上方任務，再回答問題。
+                    </div>
+                    
+                    <div class="flex gap-4 w-full md:w-auto">
+                        <button type="button" onclick="checkQuiz()" class="flex-1 md:flex-none bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform active:scale-95">
+                            送出答案
+                        </button>
+                        
+                        <a id="next-btn" href="t2.html" class="flex-1 md:flex-none btn-locked flex items-center justify-center gap-2 font-bold py-3 px-8 rounded-full shadow-lg transition-all">
+                            下一頁 <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="bg-slate-800 text-slate-400 py-6 text-center text-xs">
+        <p>© 2024 人體平衡實驗室 | 專為國中自然科設計</p>
+    </footer>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        // --- 運動生理模擬器邏輯 ---
+        function setSimulation(mode) {
+            const avatar = document.getElementById('sim-avatar');
+            const avatarBg = document.getElementById('sim-avatar-bg');
+            const sweat = document.getElementById('sim-sweat');
+            const text = document.getElementById('sim-text');
+            
+            const iconHeart = document.getElementById('icon-heart');
+            const valHeart = document.getElementById('val-heart');
+            
+            const iconLung = document.getElementById('icon-lung');
+            const valBreath = document.getElementById('val-breath');
+            
+            const valBp = document.getElementById('val-bp');
+            
+            const barO2 = document.getElementById('bar-o2');
+            const barCO2 = document.getElementById('bar-co2');
+            const labelO2 = document.getElementById('label-o2');
+            const labelCO2 = document.getElementById('label-co2');
+
+            if (mode === 'exercise') {
+                // 運動模式
+                avatar.className = "fa-solid fa-person-running text-6xl text-white relative z-10 transition-all duration-300 runner";
+                avatarBg.className = "absolute w-full h-full bg-red-500 rounded-full transition-colors duration-500 shadow-[0_0_30px_rgba(239,68,68,0.6)]";
+                sweat.classList.remove('hidden');
+
+                text.innerHTML = "劇烈運動中！<br>體內<span class='text-blue-300'>氧氣需求增加</span>，且產生大量<span class='text-orange-300'>二氧化碳</span>。為了加速氣體交換與運輸，<span class='text-red-300'>心搏加快、血壓上升、呼吸變快</span>。";
+                
+                // 數值動畫
+                animateValue(valHeart, 72, 145, 1000);
+                animateValue(valBreath, 15, 48, 1000);
+                valBp.innerText = "上升";
+                valBp.className = "text-xl font-mono font-bold text-red-400";
+
+                // 動畫速度
+                iconHeart.className = "fa-solid fa-heart text-red-500 text-xl heart-beat-fast";
+                iconLung.className = "fa-solid fa-lungs text-blue-400 text-xl lung-breathe-fast";
+
+                // 條狀圖
+                barO2.style.width = "90%";
+                labelO2.innerText = "極高";
+                barCO2.style.width = "90%";
+                labelCO2.innerText = "極高";
+
+            } else {
+                // 休息模式
+                avatar.className = "fa-solid fa-person text-6xl text-white relative z-10 transition-all duration-300";
+                avatarBg.className = "absolute w-full h-full bg-slate-700 rounded-full transition-colors duration-500";
+                sweat.classList.add('hidden');
+
+                text.innerHTML = "休息狀態。<br>一段時間後，體內氧氣需求與二氧化碳產生量恢復正常，因此<span class='text-green-400'>呼吸、脈搏與血壓也回復到恆定值</span>。";
+
+                // 數值動畫
+                animateValue(valHeart, 145, 72, 1500);
+                animateValue(valBreath, 48, 15, 1500);
+                valBp.innerText = "正常";
+                valBp.className = "text-xl font-mono font-bold text-green-400";
+
+                // 動畫速度
+                iconHeart.className = "fa-solid fa-heart text-red-500 text-xl heart-beat-slow";
+                iconLung.className = "fa-solid fa-lungs text-blue-400 text-xl lung-breathe-slow";
+
+                // 條狀圖
+                barO2.style.width = "30%";
+                labelO2.innerText = "低";
+                barCO2.style.width = "30%";
+                labelCO2.innerText = "低";
+            }
+        }
+
+        // 數值跳動動畫
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // --- 以下為原有邏輯 (指揮官與評量) ---
+        let currentTool = null;
+        let tasksSolved = { 'task-1': false, 'task-2': false };
+
+        const toolHint = document.getElementById('tool-hint');
+        const nextBtn = document.getElementById('next-btn');
+        const quizFeedback = document.getElementById('quiz-feedback');
+
+        function selectTool(toolType) {
+            currentTool = toolType;
+            document.querySelectorAll('button[id^="tool-"]').forEach(btn => {
+                btn.classList.remove('tool-selected');
+            });
+            document.getElementById(`tool-${toolType}`).classList.add('tool-selected');
+
+            if (toolType === 'nervous') {
+                toolHint.innerText = "已選擇：神經系統 (點擊適合的情境)";
+                toolHint.className = "text-center text-sm text-yellow-600 font-bold mt-4";
+            } else {
+                toolHint.innerText = "已選擇：內分泌系統 (點擊適合的情境)";
+                toolHint.className = "text-center text-sm text-pink-600 font-bold mt-4";
+            }
+        }
+
+        function applyTool(taskId, requiredTool) {
+            if (!currentTool) {
+                const hint = document.getElementById('tool-hint');
+                hint.classList.add('animate-bounce');
+                setTimeout(() => hint.classList.remove('animate-bounce'), 1000);
+                return;
+            }
+
+            const taskEl = document.getElementById(taskId);
+            const feedbackIcon = taskEl.querySelector('.feedback-icon');
+
+            if (currentTool === requiredTool) {
+                taskEl.classList.add('task-solved', 'border-green-500');
+                taskEl.classList.remove('border-slate-300');
+                
+                feedbackIcon.innerHTML = '<i class="fa-solid fa-check-circle text-green-500"></i>';
+                feedbackIcon.classList.remove('hidden');
+                
+                tasksSolved[taskId] = true;
+                
+                currentTool = null;
+                document.querySelectorAll('button[id^="tool-"]').forEach(btn => {
+                    btn.classList.remove('tool-selected');
+                });
+                toolHint.innerText = "配對成功！請繼續...";
+                toolHint.className = "text-center text-sm text-green-600 font-bold mt-4";
+
+                checkAllTasks();
+            } else {
+                taskEl.classList.add('animate-pulse', 'bg-red-50');
+                setTimeout(() => taskEl.classList.remove('animate-pulse', 'bg-red-50'), 500);
+                
+                toolHint.innerText = "系統不匹配！請重新思考...";
+                toolHint.className = "text-center text-sm text-red-500 font-bold mt-4";
+            }
+        }
+
+        function checkAllTasks() {
+            if (tasksSolved['task-1'] && tasksSolved['task-2']) {
+                toolHint.innerText = "太棒了！所有系統調度正確。請完成下方填空題。";
+                toolHint.className = "text-center text-sm text-indigo-600 font-bold mt-4 animate-bounce";
+            }
+        }
+
+        function checkQuiz() {
+            if (!tasksSolved['task-1'] || !tasksSolved['task-2']) {
+                quizFeedback.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 請先完成上方的「指揮官調度」任務！';
+                quizFeedback.className = "text-sm font-bold text-red-500";
+                return;
+            }
+
+            const ans1 = document.getElementById('ans1').value.trim();
+            const ans2 = document.getElementById('ans2').value.trim();
+            const q3Option = document.querySelector('input[name="q3"]:checked');
+            const ans3 = q3Option ? q3Option.value : null;
+
+            const valid1 = ['特定範圍', '一定範圍'];
+            const valid2 = ['快'];
+
+            const isCorrect1 = valid1.some(v => ans1.includes(v));
+            const isCorrect2 = valid2.some(v => ans2.includes(v));
+            const isCorrect3 = (ans3 === 'B');
+
+            if (isCorrect1 && isCorrect2 && isCorrect3) {
+                quizFeedback.innerHTML = '<i class="fa-solid fa-check-circle"></i> 恭喜過關！觀念完全正確。';
+                quizFeedback.className = "text-sm font-bold text-green-600";
+                
+                nextBtn.classList.remove('btn-locked');
+                nextBtn.classList.add('bg-green-500', 'text-white', 'hover:bg-green-600', 'animate-pulse');
+                
+                document.getElementById('ans1').disabled = true;
+                document.getElementById('ans2').disabled = true;
+                document.querySelectorAll('input[name="q3"]').forEach(r => r.disabled = true);
+            } else {
+                let errorMsg = '<i class="fa-solid fa-circle-xmark"></i> ';
+                if (!isCorrect1) errorMsg += "第1題有誤 (提示：動態平衡)。 ";
+                if (!isCorrect2) errorMsg += "第2題有誤 (提示：神經速度)。 ";
+                if (!isCorrect3) errorMsg += "第3題有誤 (恆定性是動態調整，不是不變)。";
+                
+                quizFeedback.innerHTML = errorMsg;
+                quizFeedback.className = "text-sm font-bold text-red-500";
+            }
+        }
+    </script>
+</body>
+</html>

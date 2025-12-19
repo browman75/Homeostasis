@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>人體控溫中心 | 恆定性實驗室</title>
+    
+    <!-- 引入 Google Fonts: Noto Sans TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- 自定義樣式 -->
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+            overscroll-behavior-y: none; /* 防止手機下拉重整 */
+        }
+
+        /* 模擬器視窗樣式 */
+        .simulator-viewport {
+            position: relative;
+            background: #1e293b;
+            overflow: hidden;
+            transition: background-color 0.5s ease;
+        }
+
+        /* 熱成像濾鏡層 */
+        .thermal-overlay {
+            position: absolute;
+            inset: 0;
+            opacity: 0.6;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+            transition: background 0.3s ease;
+            z-index: 10;
+        }
+
+        /* 顫抖動畫 (寒冷時) */
+        @keyframes shiver {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(-1.5px, 0.5px); }
+            50% { transform: translate(1.5px, -0.5px); }
+            75% { transform: translate(-0.5px, 1.5px); }
+            100% { transform: translate(0, 0); }
+        }
+        .animate-shiver {
+            animation: shiver 0.15s infinite;
+        }
+
+        /* 流汗動畫 (炎熱時) */
+        @keyframes sweat-drop {
+            0% { opacity: 0; transform: translateY(-5px) scale(0.5); }
+            50% { opacity: 1; transform: translateY(5px) scale(1); }
+            100% { opacity: 0; transform: translateY(20px) scale(0.8); }
+        }
+        .sweat-particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #0ea5e9;
+            border-radius: 50%;
+            z-index: 20;
+            animation: sweat-drop 1.5s infinite linear;
+        }
+
+        /* 血管 SVG 樣式 */
+        .vessel {
+            transition: stroke-width 0.5s ease, stroke 0.5s ease, opacity 0.5s ease;
+        }
+
+        /* 溫度拉桿自定義樣式 */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 28px;
+            width: 28px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 4px solid #64748b;
+            cursor: pointer;
+            margin-top: -12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: linear-gradient(90deg, #3b82f6 0%, #22c55e 50%, #ef4444 100%);
+            border-radius: 4px;
+        }
+
+        /* 按鈕鎖定狀態 */
+        .btn-locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+            background-color: #94a3b8 !important;
+        }
+
+        /* 填空題輸入框 */
+        .quiz-input {
+            border: none;
+            border-bottom: 2px solid #cbd5e1;
+            background: transparent;
+            text-align: center;
+            color: #2563eb;
+            font-weight: bold;
+            font-size: 1.1em;
+            width: 80px;
+            transition: border-color 0.3s;
+        }
+        .quiz-input:focus {
+            outline: none;
+            border-bottom-color: #2563eb;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-800">
+
+    <!-- Header / 導覽列 -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-temperature-half"></i>
+                </div>
+                <h1 class="font-bold text-lg tracking-wide text-slate-800">人體控溫中心</h1>
+            </div>
+            <div class="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">5-1 生物的恆定性</div>
+        </div>
+    </header>
+
+    <!-- Main Content / 主要內容 -->
+    <main class="flex-grow w-full max-w-4xl mx-auto p-4 flex flex-col md:flex-row gap-6">
+        
+        <!-- 左側：控制面板 (Mobile: Top) -->
+        <section class="w-full md:w-1/3 flex flex-col gap-4">
+            <!-- 說明卡片 -->
+            <div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-100">
+                <h2 class="font-bold text-slate-700 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-blue-500"></i> 環境設定
+                </h2>
+                <p class="text-sm text-slate-500 mb-6 leading-relaxed">
+                    請拖曳下方拉桿改變環境溫度，觀察右側人體為了維持<b>恆定性</b>而產生的生理變化。
+                </p>
+
+                <!-- 溫度控制器 -->
+                <div class="relative pt-6 pb-2">
+                    <label for="temp-slider" class="absolute -top-1 right-0 font-mono text-2xl font-bold text-slate-700">
+                        <span id="temp-val">25</span><span class="text-sm text-slate-400">°C</span>
+                    </label>
+                    <input type="range" id="temp-slider" min="0" max="45" value="25" step="1">
+                    <div class="flex justify-between text-xs text-slate-400 font-bold mt-2 uppercase">
+                        <span>寒冷</span>
+                        <span>舒適</span>
+                        <span>炎熱</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 生理數據監控 -->
+            <div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-100 flex-grow">
+                <h2 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-heart-pulse text-red-500"></i> 生理監控數據
+                </h2>
+                
+                <div class="space-y-3">
+                    <!-- 腦部指令 -->
+                    <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-lg">
+                        <i class="fa-solid fa-brain text-slate-400 mt-1"></i>
+                        <div>
+                            <div class="text-xs font-bold text-slate-400 uppercase">下視丘指令</div>
+                            <div id="brain-status" class="text-sm font-medium text-slate-700">監測中...</div>
+                        </div>
+                    </div>
+
+                    <!-- 血管狀態 -->
+                    <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-lg">
+                        <i class="fa-solid fa-droplet text-slate-400 mt-1"></i>
+                        <div>
+                            <div class="text-xs font-bold text-slate-400 uppercase">皮膚微血管</div>
+                            <div id="vessel-status" class="text-sm font-medium text-slate-700">正常</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 肌肉/汗腺 -->
+                    <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-lg">
+                        <i class="fa-solid fa-person-running text-slate-400 mt-1"></i>
+                        <div>
+                            <div class="text-xs font-bold text-slate-400 uppercase">肌肉/汗腺反應</div>
+                            <div id="muscle-status" class="text-sm font-medium text-slate-700">無明顯動作</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右側：模擬器 (Mobile: Bottom) -->
+        <section class="w-full md:w-2/3">
+            <div class="simulator-viewport rounded-2xl shadow-lg w-full h-[400px] md:h-[500px] flex items-center justify-center border-4 border-slate-800">
+                
+                <!-- 熱成像效果層 -->
+                <div id="thermal-layer" class="thermal-overlay bg-gradient-to-t from-transparent to-transparent"></div>
+                
+                <!-- 狀態標籤 (左上角) -->
+                <div class="absolute top-4 left-4 z-30">
+                     <span id="mode-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-green-500 text-white shadow-md">
+                        恆定維持中
+                    </span>
+                </div>
+
+                <!-- 流汗效果容器 -->
+                <div id="sweat-container" class="absolute inset-0 z-20 pointer-events-none"></div>
+
+                <!-- 人體 SVG -->
+                <div id="human-body" class="relative z-10 w-[200px] h-[360px] md:w-[240px] md:h-[420px] transition-transform duration-200">
+                    <svg viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg" class="w-full h-full drop-shadow-2xl">
+                        <!-- 身體輪廓 -->
+                        <path id="body-shape" d="M100,20 C85,20 75,35 75,50 C75,65 85,80 100,80 C115,80 125,65 125,50 C125,35 115,20 100,20 Z 
+                                 M100,85 C70,85 50,110 40,150 L20,220 L40,230 L55,160 L55,250 L65,380 L95,380 L95,280 L105,280 L105,380 L135,380 L145,250 L145,160 L160,230 L180,220 L160,150 C150,110 130,85 100,85 Z" 
+                              fill="#4ade80" stroke="#ffffff" stroke-width="2"/>
+                        
+                        <!-- 血管示意圖 (可變動粗細) -->
+                        <g id="vessel-group" stroke="#ef4444" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6">
+                            <!-- 四肢血管 -->
+                            <path class="vessel" d="M55,160 L35,210" />
+                            <path class="vessel" d="M145,160 L165,210" />
+                            <path class="vessel" d="M70,260 L75,360" />
+                            <path class="vessel" d="M130,260 L125,360" />
+                            <!-- 表面血管網 (高溫時顯示) -->
+                            <path class="vessel surface-vessel" d="M80,110 L120,110" opacity="0"/>
+                            <path class="vessel surface-vessel" d="M85,130 L115,130" opacity="0"/>
+                        </g>
+
+                        <!-- 表情 (簡單線條) -->
+                        <g id="face" stroke="#1e293b" stroke-width="3" fill="none" stroke-linecap="round">
+                            <path d="M90,45 L95,45 M105,45 L110,45" /> <!-- 眼睛 -->
+                            <path id="mouth" d="M90,60 Q100,65 110,60" /> <!-- 嘴巴 -->
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 評量區塊 -->
+    <section class="bg-white border-t border-slate-200 py-8 px-4">
+        <div class="max-w-3xl mx-auto">
+            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-check text-blue-600"></i> 實驗觀察記錄（評量）
+            </h3>
+            
+            <form id="quiz-form" class="space-y-6">
+                <!-- 題目 1 -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <p class="font-medium text-slate-700 leading-loose">
+                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold mr-2">觀察題 1</span>
+                        當環境炎熱時，皮膚微血管會
+                        <input type="text" id="ans1" class="quiz-input" placeholder="填寫動詞" autocomplete="off">
+                        （流過皮膚血液量增加），以便散熱。
+                    </p>
+                </div>
+
+                <!-- 題目 2 -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <p class="font-medium text-slate-700 leading-loose">
+                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold mr-2">觀察題 2</span>
+                        當環境寒冷時，骨骼肌會
+                        <input type="text" id="ans2" class="quiz-input" placeholder="填寫動詞" autocomplete="off">
+                        以產生熱能，所以我們會發抖。
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-between mt-8">
+                    <div id="feedback-msg" class="text-sm font-bold text-red-500 hidden">
+                        <i class="fa-solid fa-circle-exclamation"></i> 答案尚未正確，請參考上方模擬器的提示！
+                    </div>
+                    
+                    <div class="flex gap-4 ml-auto">
+                        <button type="button" onclick="checkAnswer()" class="bg-slate-800 text-white px-6 py-2 rounded-full font-bold hover:bg-slate-700 transition active:scale-95 shadow-lg">
+                            送出檢查
+                        </button>
+                        <a href="3-0.html" id="next-btn" class="btn-locked bg-green-500 text-white px-6 py-2 rounded-full font-bold hover:bg-green-600 transition shadow-lg flex items-center gap-2">
+                            下一頁 <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        // DOM Elements
+        const slider = document.getElementById('temp-slider');
+        const tempVal = document.getElementById('temp-val');
+        const bodyShape = document.getElementById('body-shape');
+        const humanBody = document.getElementById('human-body');
+        const thermalLayer = document.getElementById('thermal-layer');
+        const sweatContainer = document.getElementById('sweat-container');
+        const mouth = document.getElementById('mouth');
+        const vesselGroup = document.getElementById('vessel-group');
+        const vessels = document.querySelectorAll('.vessel');
+        
+        // Status Text Elements
+        const brainStatus = document.getElementById('brain-status');
+        const vesselStatus = document.getElementById('vessel-status');
+        const muscleStatus = document.getElementById('muscle-status');
+        const modeBadge = document.getElementById('mode-badge');
+
+        // State
+        let isSweating = false;
+        let sweatInterval;
+
+        // Initialize
+        updateSimulation(25);
+
+        // Event Listener
+        slider.addEventListener('input', (e) => {
+            updateSimulation(parseInt(e.target.value));
+        });
+
+        function updateSimulation(temp) {
+            tempVal.innerText = temp;
+
+            // 1. 清除舊狀態 (顫抖、流汗)
+            humanBody.classList.remove('animate-shiver');
+            clearInterval(sweatInterval);
+            sweatContainer.innerHTML = '';
+            isSweating = false;
+
+            // 2. 判斷溫度區間並更新視覺
+            if (temp < 18) {
+                // --- 寒冷模式 (Cold) ---
+                applyVisuals({
+                    fill: '#60a5fa', // Blue
+                    overlay: 'linear-gradient(to top, #1e3a8a, transparent)',
+                    vesselWidth: 1,
+                    vesselOpacity: 0.4,
+                    badgeText: '寒冷警報',
+                    badgeColor: 'bg-blue-600',
+                    mouthPath: 'M90,65 Q95,60 100,65 Q105,70 110,65' // 顫抖嘴型
+                });
+
+                // 文字更新
+                brainStatus.innerText = "發出命令：體溫過低，啟動保暖機制。";
+                vesselStatus.innerText = "收縮 (減少皮膚血流量以保暖)";
+                muscleStatus.innerText = "骨骼肌顫抖 (產熱)";
+
+                // 啟動顫抖動畫 (極冷時)
+                if (temp < 15) humanBody.classList.add('animate-shiver');
+
+            } else if (temp > 30) {
+                // --- 炎熱模式 (Hot) ---
+                applyVisuals({
+                    fill: '#f87171', // Red
+                    overlay: 'linear-gradient(to top, #7f1d1d, rgba(255,0,0,0.2))',
+                    vesselWidth: 4,
+                    vesselOpacity: 1,
+                    badgeText: '高溫警報',
+                    badgeColor: 'bg-red-600',
+                    mouthPath: 'M90,65 Q100,60 110,65' // 不舒服嘴型
+                });
+
+                // 文字更新
+                brainStatus.innerText = "發出命令：體溫過高，啟動散熱機制。";
+                vesselStatus.innerText = "擴張 (增加皮膚血流量以散熱)";
+                muscleStatus.innerText = "汗腺分泌汗液 (蒸發吸熱)";
+
+                // 啟動流汗
+                if (!isSweating) {
+                    startSweating(temp);
+                    isSweating = true;
+                }
+
+            } else {
+                // --- 舒適模式 (Normal) ---
+                applyVisuals({
+                    fill: '#4ade80', // Green
+                    overlay: 'none',
+                    vesselWidth: 2,
+                    vesselOpacity: 0.6,
+                    badgeText: '恆定維持中',
+                    badgeColor: 'bg-green-500',
+                    mouthPath: 'M90,60 Q100,65 110,60' // 微笑
+                });
+
+                // 文字更新
+                brainStatus.innerText = "監測中：體溫維持在正常範圍。";
+                vesselStatus.innerText = "正常運作";
+                muscleStatus.innerText = "無明顯動作";
+            }
+        }
+
+        // 輔助函式：應用視覺樣式
+        function applyVisuals(config) {
+            bodyShape.setAttribute('fill', config.fill);
+            thermalLayer.style.background = config.overlay;
+            modeBadge.className = `px-3 py-1 rounded-full text-xs font-bold text-white shadow-md ${config.badgeColor}`;
+            modeBadge.innerText = config.badgeText;
+            mouth.setAttribute('d', config.mouthPath);
+            
+            // 血管樣式
+            vessels.forEach(v => {
+                v.setAttribute('stroke-width', config.vesselWidth);
+                v.parentNode.setAttribute('opacity', config.vesselOpacity);
+            });
+        }
+
+        // 輔助函式：流汗效果
+        function startSweating(temp) {
+            const frequency = temp > 38 ? 100 : 300; // 越熱汗越多
+            sweatInterval = setInterval(() => {
+                const drop = document.createElement('div');
+                drop.classList.add('sweat-particle');
+                // 隨機位置
+                drop.style.left = (50 + Math.random() * 100) + 'px';
+                drop.style.top = (30 + Math.random() * 100) + 'px';
+                sweatContainer.appendChild(drop);
+                
+                // 動畫結束後移除 DOM
+                setTimeout(() => drop.remove(), 1500);
+            }, frequency);
+        }
+
+        // 評量檢查邏輯
+        function checkAnswer() {
+            const ans1 = document.getElementById('ans1').value.trim();
+            const ans2 = document.getElementById('ans2').value.trim();
+            const feedback = document.getElementById('feedback-msg');
+            const nextBtn = document.getElementById('next-btn');
+
+            // 定義關鍵字 (模糊比對)
+            const valid1 = ['擴張', '舒張', '變粗', '變大'];
+            const valid2 = ['顫抖', '收縮', '發抖', '收縮顫抖'];
+
+            const check1 = valid1.some(v => ans1.includes(v));
+            const check2 = valid2.some(v => ans2.includes(v));
+
+            if (check1 && check2) {
+                // 答對
+                feedback.classList.remove('hidden', 'text-red-500');
+                feedback.classList.add('text-green-600');
+                feedback.innerHTML = '<i class="fa-solid fa-check-circle"></i> 恭喜完全正確！你已解鎖下一關。';
+                
+                // 解鎖按鈕
+                nextBtn.classList.remove('btn-locked');
+                nextBtn.classList.add('animate-bounce');
+                
+                // 鎖定輸入框
+                document.getElementById('ans1').disabled = true;
+                document.getElementById('ans2').disabled = true;
+            } else {
+                // 答錯
+                feedback.classList.remove('hidden', 'text-green-600');
+                feedback.classList.add('text-red-500');
+                feedback.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> 答案不完整或有誤，請再觀察一次模擬器！（提示：注意血管和肌肉的動作）';
+            }
+        }
+    </script>
+</body>
+</html>

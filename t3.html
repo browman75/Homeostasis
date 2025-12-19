@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>動物生存大挑戰 | 恆定性總部</title>
+    
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- 自定義樣式 -->
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f0fdf4; /* Light Green bg */
+            color: #1e293b; /* Slate-800 */
+            font-size: 18px; /* 提升基礎字體大小 */
+            line-height: 1.6;
+        }
+
+        /* 區塊通用樣式 */
+        .learning-section {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        /* 評量區塊樣式 */
+        .quiz-block {
+            background-color: #f8fafc;
+            border-left: 8px solid #3b82f6;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-radius: 0.75rem;
+        }
+
+        /* 遊戲畫布容器 */
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 300px; /* 加高一點適應大字體 */
+            border-radius: 1.5rem;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+            margin-bottom: 1.5rem;
+            transition: all 0.5s ease;
+        }
+
+        /* 選項按鈕樣式 */
+        .choice-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background: white;
+            border: 3px solid #e2e8f0;
+            border-radius: 1rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .choice-btn:hover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: translateY(-4px);
+        }
+        .choice-btn:active {
+            transform: translateY(0);
+        }
+        .choice-btn.correct {
+            background-color: #dcfce7;
+            border-color: #22c55e;
+            color: #15803d;
+        }
+        .choice-btn.wrong {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+            color: #b91c1c;
+            opacity: 0.8;
+        }
+
+        /* --- 分類遊戲樣式 --- */
+        .category-box {
+            transition: all 0.3s;
+            border: 4px dashed #cbd5e1;
+        }
+        .category-box.active-target {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: scale(1.02);
+        }
+        .animal-card {
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            width: 100px; /* 加大卡片 */
+            height: 100px;
+        }
+        .animal-card.selected {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 4px #3b82f6;
+            background-color: #eff6ff;
+        }
+        .animal-card.sorted {
+            cursor: default;
+            transform: scale(1);
+            box-shadow: none;
+            background-color: #ffffff;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake {
+            animation: shake 0.3s ease-in-out;
+            border-color: #ef4444 !important;
+        }
+
+        /* --- 蜥蜴 & 北極熊場景動畫 --- */
+        #lizard-game-bg { background: linear-gradient(to right, #fde047 40%, #94a3b8 40%); }
+        #bear-game-bg { background: linear-gradient(to bottom, #bae6fd, #f0f9ff); }
+        
+        #lizard { transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .lizard-shiver { animation: shiver 0.2s infinite; color: #3b82f6; }
+        .lizard-happy { color: #16a34a; transform: scale(1.1); }
+        
+        #bear { transition: all 0.5s; }
+        .bear-shiver { animation: shiver 0.2s infinite; }
+        .bear-warm { filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.6)); }
+        
+        @keyframes shiver {
+            0% { transform: translateX(-50%) rotate(0deg); }
+            25% { transform: translateX(-52%) rotate(-2deg); }
+            75% { transform: translateX(-48%) rotate(2deg); }
+            100% { transform: translateX(-50%) rotate(0deg); }
+        }
+
+        /* 鎖定按鈕 */
+        .btn-locked {
+            background-color: #cbd5e1 !important;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- 導航列 -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-green-600 text-white w-10 h-10 rounded-xl flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-gamepad"></i>
+                </div>
+                <h1 class="font-bold text-2xl tracking-wide text-slate-800">動物生存大挑戰</h1>
+            </div>
+            <div class="text-base font-medium text-slate-600 bg-slate-100 px-4 py-2 rounded-lg">單元 3：內溫與外溫</div>
+        </div>
+    </nav>
+
+    <main class="flex-grow w-full max-w-5xl mx-auto p-4 md:p-8 space-y-12">
+        
+        <!-- 挑戰 1：分類大考驗 -->
+        <section class="learning-section">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="bg-indigo-100 text-indigo-800 text-base px-3 py-1 rounded-lg font-bold">挑戰 1</span>
+                <h2 class="text-3xl font-bold text-slate-800">誰是內溫？誰是外溫？</h2>
+            </div>
+            <p class="text-slate-600 mb-8 text-xl font-medium">
+                <i class="fa-solid fa-hand-pointer animate-bounce text-indigo-500"></i> 請先<b>點選下方動物</b>，再<b>點擊正確的籃子</b>進行分類。
+            </p>
+
+            <!-- 分類遊戲區 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <!-- 外溫籃子 -->
+                <div id="target-ecto" onclick="placeAnimal('ecto')" class="category-box bg-yellow-50 rounded-2xl p-6 min-h-[240px] cursor-pointer hover:bg-yellow-100 relative">
+                    <div class="flex items-center gap-4 mb-4 border-b-2 border-yellow-200 pb-3">
+                        <div class="bg-yellow-400 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-sun"></i>
+                        </div>
+                        <h3 class="font-bold text-2xl text-slate-800">外溫動物</h3>
+                    </div>
+                    <!-- 收集到的動物 -->
+                    <div id="container-ecto" class="grid grid-cols-3 gap-3"></div>
+                    
+                    <!-- 知識解鎖 (隱藏) -->
+                    <div id="info-ecto" class="hidden mt-6 text-base text-slate-700 bg-white/60 p-4 rounded-xl shadow-sm border border-yellow-200">
+                        <ul class="list-disc list-inside space-y-2">
+                            <li>體溫主要<strong class="text-yellow-700 text-lg">隨環境改變</strong></li>
+                            <li>調節方式：行為 (曬太陽/躲陰影)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 內溫籃子 -->
+                <div id="target-endo" onclick="placeAnimal('endo')" class="category-box bg-blue-50 rounded-2xl p-6 min-h-[240px] cursor-pointer hover:bg-blue-100 relative">
+                    <div class="flex items-center gap-4 mb-4 border-b-2 border-blue-200 pb-3">
+                        <div class="bg-blue-400 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-fire"></i>
+                        </div>
+                        <h3 class="font-bold text-2xl text-slate-800">內溫動物</h3>
+                    </div>
+                    <!-- 收集到的動物 -->
+                    <div id="container-endo" class="grid grid-cols-3 gap-3"></div>
+
+                    <!-- 知識解鎖 (隱藏) -->
+                    <div id="info-endo" class="hidden mt-6 text-base text-slate-700 bg-white/60 p-4 rounded-xl shadow-sm border border-blue-200">
+                        <ul class="list-disc list-inside space-y-2">
+                            <li>體溫<strong class="text-blue-700 text-lg">維持在一定範圍</strong></li>
+                            <li>調節方式：代謝產熱 (進食/顫抖)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 待分類動物區 -->
+            <div id="animal-pool" class="bg-slate-100 p-6 rounded-2xl flex flex-wrap gap-6 justify-center min-h-[140px] items-center border-2 border-slate-200">
+                <!-- 動物卡片由 JS 生成 -->
+            </div>
+            
+            <div id="sort-feedback" class="text-center text-lg font-bold text-indigo-600 mt-4 min-h-[2rem]"></div>
+
+            <!-- 評量 1 (遊戲完成後解鎖) -->
+            <div id="quiz-1-block" class="quiz-block hidden opacity-0 transition-opacity duration-1000">
+                <div class="font-bold text-blue-600 mb-4 text-xl"><i class="fa-solid fa-pen"></i> 隨堂小測驗 1</div>
+                <p class="text-lg text-slate-800 mb-4 font-bold">下列關於動物體溫調節的敘述，何者正確？</p>
+                <div class="space-y-3 text-lg">
+                    <label class="flex items-center gap-3 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition"><input type="radio" name="q1" value="A" class="w-5 h-5"> <span>蜥蜴是內溫動物，體溫固定。</span></label>
+                    <label class="flex items-center gap-3 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition"><input type="radio" name="q1" value="B" class="w-5 h-5"> <span>人類是外溫動物，需要曬太陽才能動。</span></label>
+                    <label class="flex items-center gap-3 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition"><input type="radio" name="q1" value="C" class="w-5 h-5"> <span>內溫動物主要靠代謝作用產生熱能維持體溫。</span></label>
+                </div>
+                <button onclick="checkQ1()" class="mt-6 bg-blue-600 text-white px-8 py-3 rounded-full text-lg font-bold hover:bg-blue-500 transition shadow-lg transform hover:-translate-y-1">檢查答案</button>
+                <div id="fb-q1" class="text-lg font-bold mt-4 hidden p-3 rounded-lg"></div>
+            </div>
+        </section>
+
+        <!-- 挑戰 2：蜥蜴的抉擇 -->
+        <section class="learning-section border-l-8 border-l-yellow-400">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-slate-800">2. 挑戰：蜥蜴的抉擇</h2>
+                <span class="bg-yellow-100 text-yellow-800 text-base px-3 py-1 rounded-lg font-bold">外溫動物情境</span>
+            </div>
+            
+            <div class="bg-slate-50 p-6 rounded-2xl mb-6 border-2 border-slate-200">
+                <p class="font-bold text-slate-700 text-xl mb-2">
+                    <i class="fa-solid fa-circle-exclamation text-blue-500"></i> 目前狀態：
+                    <span class="text-blue-600 bg-blue-50 px-2 py-1 rounded">體溫 15°C (寒冷)</span>
+                </p>
+                <p class="text-lg text-slate-600 mt-2 leading-relaxed">
+                    蜥蜴覺得身體僵硬，動作緩慢。作為一隻<b>外溫動物</b>，牠該怎麼做才能讓體溫上升？
+                </p>
+            </div>
+
+            <div class="game-container shadow-inner border-2 border-slate-200" id="lizard-game-bg">
+                <div class="absolute left-6 top-6 text-yellow-500 text-6xl animate-spin-slow" style="animation-duration: 10s"><i class="fa-solid fa-sun"></i></div>
+                <div class="absolute right-6 top-6 text-slate-600 text-6xl"><i class="fa-solid fa-cloud"></i></div>
+                
+                <div id="lizard" class="lizard-shiver" style="font-size: 5rem; position: absolute; bottom: 40px; left: 60%;">
+                    <i class="fa-solid fa-staff-snake"></i>
+                    <div id="liz-speech" class="absolute -top-16 -right-12 bg-white p-3 rounded-2xl text-base font-bold shadow-lg border-2 border-slate-100">好冷...</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4" id="liz-choices">
+                <button onclick="solveLizard('A', this)" class="choice-btn group">
+                    <i class="fa-solid fa-sun text-yellow-500 text-4xl mb-3 group-hover:scale-110 transition"></i>
+                    <div class="font-bold text-xl text-slate-800 mb-1">行為：曬太陽</div>
+                    <div class="text-base text-slate-500">吸取環境熱能</div>
+                </button>
+                <button onclick="solveLizard('B', this)" class="choice-btn group">
+                    <i class="fa-solid fa-cloud text-slate-500 text-4xl mb-3 group-hover:scale-110 transition"></i>
+                    <div class="font-bold text-xl text-slate-800 mb-1">行為：躲陰影</div>
+                    <div class="text-base text-slate-500">避免陽光直射</div>
+                </button>
+                <button onclick="solveLizard('C', this)" class="choice-btn group">
+                    <i class="fa-solid fa-drumstick-bite text-orange-500 text-4xl mb-3 group-hover:scale-110 transition"></i>
+                    <div class="font-bold text-xl text-slate-800 mb-1">生理：代謝產熱</div>
+                    <div class="text-base text-slate-500">進食或顫抖</div>
+                </button>
+                <button onclick="solveLizard('D', this)" class="choice-btn group">
+                    <i class="fa-solid fa-droplet text-blue-500 text-4xl mb-3 group-hover:scale-110 transition"></i>
+                    <div class="font-bold text-xl text-slate-800 mb-1">生理：排汗散熱</div>
+                    <div class="text-base text-slate-500">流汗或擴張血管</div>
+                </button>
+            </div>
+            
+            <div id="liz-feedback" class="mt-6 p-5 rounded-xl hidden text-lg font-bold border-2"></div>
+
+            <div class="quiz-block mt-8 hidden" id="liz-quiz-block">
+                <div class="font-bold text-yellow-600 mb-4 text-xl"><i class="fa-solid fa-check-double"></i> 觀念確認</div>
+                <p class="text-lg text-slate-800 mb-4 font-bold">
+                    剛剛蜥蜴選擇「曬太陽」，這證實了外溫動物主要依靠：
+                </p>
+                <div class="flex gap-4 mt-4">
+                    <button onclick="checkQ2('env')" class="bg-white border-2 border-slate-300 hover:bg-yellow-50 hover:border-yellow-400 px-6 py-3 rounded-xl text-lg font-bold text-slate-700 transition">環境熱源</button>
+                    <button onclick="checkQ2('meta')" class="bg-white border-2 border-slate-300 hover:bg-yellow-50 hover:border-yellow-400 px-6 py-3 rounded-xl text-lg font-bold text-slate-700 transition">代謝產熱</button>
+                </div>
+                <div id="fb-q2" class="text-lg font-bold mt-4 hidden p-3 rounded-lg"></div>
+            </div>
+        </section>
+
+        <!-- 挑戰 3：北極熊的抉擇 -->
+        <section class="learning-section border-l-8 border-l-blue-400">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-slate-800">3. 挑戰：北極熊的抉擇</h2>
+                <span class="bg-blue-100 text-blue-800 text-base px-3 py-1 rounded-lg font-bold">內溫動物情境</span>
+            </div>
+            
+            <div class="bg-slate-50 p-6 rounded-2xl mb-6 border-2 border-slate-200">
+                <p class="font-bold text-slate-700 text-xl mb-2">
+                    <i class="fa-solid fa-circle-exclamation text-blue-500"></i> 目前狀態：
+                    <span class="text-blue-600 bg-blue-50 px-2 py-1 rounded">環境 -30°C (極寒)</span>
+                </p>
+                <p class="text-lg text-slate-600 mt-2 leading-relaxed">
+                    暴風雪來襲，陽光微弱。作為一隻<b>內溫動物</b>，北極熊該如何維持體溫？
+                </p>
+            </div>
+
+            <div class="game-container shadow-inner border-2 border-slate-200" id="bear-game-bg">
+                <div class="absolute inset-0 flex items-center justify-center opacity-30 text-white text-9xl">
+                    <i class="fa-regular fa-snowflake"></i>
+                </div>
+                <div id="bear" class="bear-shiver" style="font-size: 6rem; position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);">
+                    <i class="fa-solid fa-bear-code text-white drop-shadow-lg"></i>
+                    <div id="bear-speech" class="absolute -top-16 -right-20 bg-white p-3 rounded-2xl text-base font-bold shadow-lg border-2 border-slate-100 text-slate-800">
+                        維持不住體溫了...
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4" id="bear-choices">
+                <button onclick="solveBear('A', this)" class="choice-btn group">
+                    <i class="fa-solid fa-sun text-yellow-500 text-4xl mb-3 group-hover:scale-110 transition"></i>
+                    <div class="font-bold text-xl text-slate-800 mb-1">行為：曬太陽</div>
+                    <div class="text-base text-slate-500">吸取環境熱能</div>
+                </button>
+                <button onclick="solveBear('B', this)" class="choice-btn group">
+                    <i class="fa-solid fa-cloud text-slate-500 text-4xl mb-3 group-hover:scale-110 transition"></i>
+                    <div class="font-bold text-xl text-slate-800 mb-1">行為：躲陰影</div>
+                    <div class="text-base text-slate-500">避免陽光直射</div>
+                </button>
+                <button onclick="solveBear('C', this)" class="choice-btn group">
+                    <i class="fa-solid fa-drumstick-bite text-orange-500 text-4xl mb-3 group-hover:scale-110 transition"></i>
+                    <div class="font-bold text-xl text-slate-800 mb-1">生理：代謝產熱</div>
+                    <div class="text-base text-slate-500">進食或顫抖</div>
+                </button>
+                <button onclick="solveBear('D', this)" class="choice-btn group">
+                    <i class="fa-solid fa-droplet text-blue-500 text-4xl mb-3 group-hover:scale-110 transition"></i>
+                    <div class="font-bold text-xl text-slate-800 mb-1">生理：排汗散熱</div>
+                    <div class="text-base text-slate-500">流汗或擴張血管</div>
+                </button>
+            </div>
+
+            <div id="bear-feedback" class="mt-6 p-5 rounded-xl hidden text-lg font-bold border-2"></div>
+
+            <div class="quiz-block mt-8 hidden" id="bear-quiz-block">
+                <div class="font-bold text-blue-600 mb-4 text-xl"><i class="fa-solid fa-check-double"></i> 觀念確認</div>
+                <p class="text-lg text-slate-800 mb-4 font-bold">
+                    北極熊選擇「代謝產熱」，這代表內溫動物的體溫來源主要是：
+                </p>
+                <div class="flex gap-4 mt-4">
+                    <button onclick="checkQ3('env')" class="bg-white border-2 border-slate-300 hover:bg-blue-50 hover:border-blue-400 px-6 py-3 rounded-xl text-lg font-bold text-slate-700 transition">環境溫度</button>
+                    <button onclick="checkQ3('self')" class="bg-white border-2 border-slate-300 hover:bg-blue-50 hover:border-blue-400 px-6 py-3 rounded-xl text-lg font-bold text-slate-700 transition">自身細胞代謝</button>
+                </div>
+                <div id="fb-q3" class="text-lg font-bold mt-4 hidden p-3 rounded-lg"></div>
+            </div>
+        </section>
+
+        <!-- 頁尾導航 -->
+        <div class="text-center pb-16">
+            <p id="final-msg" class="text-slate-500 text-lg mb-6 font-medium">
+                <i class="fa-solid fa-lock"></i> 請完成所有 3 個挑戰與測驗以解鎖下一頁
+            </p>
+            <a id="next-btn" href="t4.html" class="btn-locked inline-flex items-center gap-3 bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-12 rounded-full shadow-xl transition-all transform active:scale-95 text-xl">
+                下一頁 <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+    </main>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        // --- 遊戲狀態 ---
+        const progress = { game1: false, q1: false, q2: false, q3: false };
+        
+        // --- 挑戰 1：分類遊戲邏輯 ---
+        const animals = [
+            { id: 'a1', name: '人類', icon: 'fa-person', type: 'endo', color: 'text-blue-500' },
+            { id: 'a2', name: '蜥蜴', icon: 'fa-staff-snake', type: 'ecto', color: 'text-green-600' },
+            { id: 'a3', name: '青蛙', icon: 'fa-frog', type: 'ecto', color: 'text-green-500' },
+            { id: 'a4', name: '鳥類', icon: 'fa-dove', type: 'endo', color: 'text-sky-400' },
+            { id: 'a5', name: '魚', icon: 'fa-fish', type: 'ecto', color: 'text-orange-400' },
+            { id: 'a6', name: '狗', icon: 'fa-dog', type: 'endo', color: 'text-amber-600' },
+        ];
+        let selectedAnimal = null;
+        let sortedCount = 0;
+
+        // 初始化遊戲
+        function initSortGame() {
+            const pool = document.getElementById('animal-pool');
+            // 隨機打亂
+            animals.sort(() => Math.random() - 0.5);
+            animals.forEach(a => {
+                const el = document.createElement('div');
+                el.className = 'animal-card bg-white border-2 border-slate-200 rounded-xl p-2 w-28 h-28 flex flex-col items-center justify-center shadow-md hover:shadow-lg';
+                el.id = a.id;
+                el.onclick = () => selectAnimal(a);
+                el.innerHTML = `
+                    <i class="fa-solid ${a.icon} ${a.color} text-4xl mb-2"></i>
+                    <span class="text-lg font-bold text-slate-700">${a.name}</span>
+                `;
+                pool.appendChild(el);
+            });
+        }
+        initSortGame();
+
+        function selectAnimal(animal) {
+            // 如果已經分類過了，不做反應
+            if (document.getElementById(animal.id).classList.contains('sorted')) return;
+
+            // 清除之前的選取
+            if (selectedAnimal) {
+                document.getElementById(selectedAnimal.id).classList.remove('selected');
+            }
+            
+            // 選取新的
+            selectedAnimal = animal;
+            document.getElementById(animal.id).classList.add('selected');
+            
+            // 提示籃子
+            document.getElementById('target-ecto').classList.add('active-target');
+            document.getElementById('target-endo').classList.add('active-target');
+            document.getElementById('sort-feedback').innerText = `已選擇 ${animal.name}，請點擊上方正確的籃子。`;
+        }
+
+        function placeAnimal(targetType) {
+            if (!selectedAnimal) {
+                shakeBox(targetType === 'ecto' ? 'target-ecto' : 'target-endo');
+                document.getElementById('sort-feedback').innerText = "請先在下方點選一隻動物！";
+                return;
+            }
+
+            const targetBox = document.getElementById(`target-${targetType}`);
+            const feedback = document.getElementById('sort-feedback');
+
+            if (selectedAnimal.type === targetType) {
+                // 正確
+                const el = document.getElementById(selectedAnimal.id);
+                el.classList.remove('selected');
+                el.classList.add('sorted');
+                el.onclick = null; // 移除點擊事件
+                
+                // 移動 DOM 到籃子內
+                const container = document.getElementById(`container-${targetType}`);
+                container.appendChild(el);
+                
+                // 播放音效或視覺回饋
+                feedback.innerText = "⭕ 正確分類！";
+                feedback.className = "text-center text-lg font-bold text-green-600 mt-4 min-h-[2rem]";
+                
+                selectedAnimal = null;
+                sortedCount++;
+                resetTargets();
+
+                // 檢查是否完成
+                if (sortedCount === animals.length) {
+                    completeSortGame();
+                }
+            } else {
+                // 錯誤
+                feedback.innerText = "❌ 分類錯誤，請再試一次！";
+                feedback.className = "text-center text-lg font-bold text-red-500 mt-4 min-h-[2rem]";
+                shakeBox(`target-${targetType}`);
+            }
+        }
+
+        function resetTargets() {
+            document.getElementById('target-ecto').classList.remove('active-target');
+            document.getElementById('target-endo').classList.remove('active-target');
+        }
+
+        function shakeBox(id) {
+            const el = document.getElementById(id);
+            el.classList.add('shake');
+            setTimeout(() => el.classList.remove('shake'), 300);
+        }
+
+        function completeSortGame() {
+            progress.game1 = true;
+            document.getElementById('sort-feedback').innerText = "🎉 全部分類完成！解鎖知識卡與測驗。";
+            document.getElementById('info-ecto').classList.remove('hidden');
+            document.getElementById('info-endo').classList.remove('hidden');
+            
+            // 顯示測驗
+            const quiz = document.getElementById('quiz-1-block');
+            quiz.classList.remove('hidden');
+            // 讓它淡入
+            setTimeout(() => quiz.classList.remove('opacity-0'), 100);
+        }
+
+
+        // --- 全域評量檢查 ---
+        function checkAllPass() {
+            if (progress.game1 && progress.q1 && progress.q2 && progress.q3) {
+                const btn = document.getElementById('next-btn');
+                const msg = document.getElementById('final-msg');
+                btn.classList.remove('btn-locked');
+                btn.classList.add('animate-bounce');
+                msg.innerHTML = '<i class="fa-solid fa-check-circle text-green-500"></i> 太棒了！您已掌握生存技巧，請進入下一單元。';
+                msg.classList.remove('text-slate-500');
+                msg.classList.add('text-green-600', 'font-bold');
+            }
+        }
+
+        // --- 評量 1 檢查 ---
+        function checkQ1() {
+            if (!progress.game1) return; // 遊戲沒過不能做
+            const val = document.querySelector('input[name="q1"]:checked')?.value;
+            const fb = document.getElementById('fb-q1');
+            fb.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+            
+            if (val === 'C') {
+                fb.innerText = "⭕ 正確！內溫動物靠代謝產熱。";
+                fb.classList.add('bg-green-100', 'text-green-700');
+                progress.q1 = true;
+                document.querySelectorAll('input[name="q1"]').forEach(i => i.disabled = true);
+                checkAllPass();
+            } else {
+                fb.innerText = "❌ 錯誤。蜥蜴是外溫，人類是內溫。";
+                fb.classList.add('bg-red-100', 'text-red-700');
+            }
+        }
+
+        // --- 挑戰 2：蜥蜴邏輯 ---
+        function solveLizard(choice, btn) {
+            const feedback = document.getElementById('liz-feedback');
+            const lizard = document.getElementById('lizard');
+            const speech = document.getElementById('liz-speech');
+            const quizBlock = document.getElementById('liz-quiz-block');
+            
+            document.querySelectorAll('#liz-choices .choice-btn').forEach(b => {
+                b.classList.remove('correct', 'wrong', 'ring-4', 'ring-blue-400');
+                b.disabled = true;
+            });
+            feedback.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'border-red-200', 'bg-green-50', 'text-green-700', 'border-green-200');
+
+            if (choice === 'A') {
+                btn.classList.add('correct', 'ring-4', 'ring-green-500');
+                lizard.classList.remove('lizard-shiver');
+                lizard.style.left = '20%';
+                lizard.classList.add('lizard-happy');
+                speech.innerText = "暖呼呼！";
+                feedback.innerText = "⭕ 答對了！外溫動物主要利用「行為調節」（如曬太陽）來獲取環境熱能。";
+                feedback.classList.add('bg-green-50', 'text-green-700', 'border-green-200');
+                quizBlock.classList.remove('hidden');
+            } else {
+                btn.classList.add('wrong');
+                feedback.innerText = "❌ 答錯了。外溫動物無法有效靠代謝產熱 (C) 或生理排汗 (D)，躲陰影 (B) 會更冷喔！";
+                feedback.classList.add('bg-red-50', 'text-red-700', 'border-red-200');
+                setTimeout(() => {
+                    document.querySelectorAll('#liz-choices .choice-btn').forEach(b => {
+                        b.disabled = false;
+                        b.classList.remove('wrong');
+                    });
+                }, 1500);
+            }
+            feedback.classList.remove('hidden');
+        }
+
+        function checkQ2(ans) {
+            const fb = document.getElementById('fb-q2');
+            fb.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+            if (ans === 'env') {
+                fb.innerText = "⭕ 正確！";
+                fb.classList.add('bg-green-100', 'text-green-700');
+                progress.q2 = true;
+                checkAllPass();
+            } else {
+                fb.innerText = "❌ 錯誤，那是內溫動物的特徵。";
+                fb.classList.add('bg-red-100', 'text-red-700');
+            }
+        }
+
+        // --- 挑戰 3：北極熊邏輯 ---
+        function solveBear(choice, btn) {
+            const feedback = document.getElementById('bear-feedback');
+            const bear = document.getElementById('bear');
+            const speech = document.getElementById('bear-speech');
+            const quizBlock = document.getElementById('bear-quiz-block');
+
+            document.querySelectorAll('#bear-choices .choice-btn').forEach(b => {
+                b.classList.remove('correct', 'wrong', 'ring-4', 'ring-green-500');
+                b.disabled = true;
+            });
+            feedback.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'border-red-200', 'bg-green-50', 'text-green-700', 'border-green-200');
+
+            if (choice === 'C') {
+                btn.classList.add('correct', 'ring-4', 'ring-green-500');
+                bear.classList.remove('bear-shiver');
+                bear.classList.add('bear-warm');
+                bear.innerHTML = '<i class="fa-solid fa-face-grin-tongue text-white drop-shadow-lg"></i>';
+                speech.innerText = "身體熱起來了！";
+                feedback.innerText = "⭕ 答對了！內溫動物在極寒環境下，主要靠「增加代謝」（顫抖或進食）來維持體溫。";
+                feedback.classList.add('bg-green-50', 'text-green-700', 'border-green-200');
+                quizBlock.classList.remove('hidden');
+            } else {
+                btn.classList.add('wrong');
+                let reason = choice === 'A' ? "極地陽光微弱。" : choice === 'B' ? "躲陰影更冷！" : "流汗會失溫！";
+                feedback.innerText = "❌ 答錯了。" + reason;
+                feedback.classList.add('bg-red-50', 'text-red-700', 'border-red-200');
+                setTimeout(() => {
+                    document.querySelectorAll('#bear-choices .choice-btn').forEach(b => {
+                        b.disabled = false;
+                        b.classList.remove('wrong');
+                    });
+                }, 1500);
+            }
+            feedback.classList.remove('hidden');
+        }
+
+        function checkQ3(ans) {
+            const fb = document.getElementById('fb-q3');
+            fb.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+            if (ans === 'self') {
+                fb.innerText = "⭕ 正確！";
+                fb.classList.add('bg-green-100', 'text-green-700');
+                progress.q3 = true;
+                checkAllPass();
+            } else {
+                fb.innerText = "❌ 錯誤，內溫動物不依賴環境溫度。";
+                fb.classList.add('bg-red-100', 'text-red-700');
+            }
+        }
+    </script>
+</body>
+</html>

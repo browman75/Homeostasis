@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>內溫與外溫：體溫變化實驗室</title>
+    
+    <!-- 引入字型與圖標 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f0fdfa; /* Teal-50 */
+            color: #334155;
+            font-size: 18px; /* 大字體護眼 */
+            line-height: 1.6;
+        }
+
+        /* 卡片容器 */
+        .card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 2px solid #ccfbf1;
+            margin-bottom: 2rem;
+        }
+
+        /* 自定義滑桿 */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 16px;
+            cursor: pointer;
+            background: linear-gradient(to right, #3b82f6, #a855f7, #ef4444); /* 藍->紫->紅 */
+            border-radius: 999px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 32px;
+            width: 32px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 4px solid #64748b;
+            cursor: pointer;
+            margin-top: -9px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        input[type=range]:active::-webkit-slider-thumb {
+            transform: scale(1.2);
+        }
+
+        /* 動物狀態動畫 */
+        @keyframes shiver {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px) rotate(-1deg); }
+            75% { transform: translateX(2px) rotate(1deg); }
+        }
+        .shiver { animation: shiver 0.15s infinite; }
+
+        @keyframes pant {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .pant { animation: pant 0.4s infinite; }
+
+        /* 圖表線條動畫 */
+        path {
+            transition: d 0.1s linear;
+        }
+
+        /* 鎖定按鈕 */
+        .btn-locked {
+            background-color: #cbd5e1 !important;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .quiz-option {
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 2px solid #e2e8f0;
+        }
+        .quiz-option:hover {
+            border-color: #0ea5e9;
+            background-color: #e0f2fe;
+        }
+        .quiz-option.selected {
+            border-color: #0ea5e9;
+            background-color: #e0f2fe;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- 導航 -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-teal-500 text-white w-10 h-10 rounded-xl flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <h1 class="font-bold text-2xl tracking-wide text-slate-800">體溫變化實驗室</h1>
+            </div>
+            <div class="text-base font-medium text-slate-600 bg-slate-100 px-4 py-2 rounded-lg">單元 3-2：圖表解析</div>
+        </div>
+    </nav>
+
+    <main class="flex-grow w-full max-w-5xl mx-auto p-4 md:p-8 space-y-8">
+
+        <!-- 引導說明 -->
+        <section class="card bg-gradient-to-r from-teal-50 to-white">
+            <h2 class="text-3xl font-bold text-slate-800 mb-4">
+                <i class="fa-solid fa-flask text-teal-600 mr-2"></i> 實驗任務
+            </h2>
+            <p class="text-lg text-slate-700 leading-relaxed">
+                我們常說內溫動物是「恆溫」，外溫動物是「變溫」。這到底是怎麼回事？<br>
+                請拖曳下方的<b>「環境溫度拉桿」</b>，觀察兩種動物的反應，並幫科學家繪製出體溫變化圖！
+            </p>
+        </section>
+
+        <!-- 互動實驗區 -->
+        <section class="flex flex-col lg:flex-row gap-8">
+            
+            <!-- 左側：動物觀察箱 -->
+            <div class="w-full lg:w-1/2 flex flex-col gap-6">
+                <!-- 控制器 -->
+                <div class="card bg-slate-800 text-white border-none py-6">
+                    <div class="flex justify-between items-end mb-4">
+                        <label class="font-bold text-xl"><i class="fa-solid fa-temperature-three-quarters mr-2"></i> 環境溫度控制</label>
+                        <span id="env-temp-display" class="text-4xl font-mono font-bold text-yellow-400">25°C</span>
+                    </div>
+                    <input type="range" id="temp-slider" min="0" max="45" value="25" step="1">
+                    <div class="flex justify-between text-sm text-slate-400 mt-2 font-bold">
+                        <span>寒冷 (0°C)</span>
+                        <span>舒適 (25°C)</span>
+                        <span>炎熱 (45°C)</span>
+                    </div>
+                </div>
+
+                <!-- 動物 A (內溫) -->
+                <div class="card relative overflow-hidden transition-colors duration-500" id="card-endo">
+                    <div class="absolute top-2 right-4 text-xs font-bold bg-white/80 px-2 py-1 rounded-full text-slate-500">
+                        內溫動物 (如：老鼠)
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <div id="endo-visual" class="text-7xl text-red-500 transition-transform duration-300">
+                            <i class="fa-solid fa-otter"></i> <!-- 用水獺代表恆溫哺乳類 -->
+                        </div>
+                        <div>
+                            <div class="text-sm text-slate-500 font-bold mb-1">體溫計</div>
+                            <div class="text-3xl font-mono font-bold text-red-600" id="endo-temp">37.0°C</div>
+                            <div class="text-base mt-2 font-bold bg-slate-100 px-3 py-1 rounded-lg inline-block" id="endo-status">
+                                代謝正常
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 生理反應圖示 -->
+                    <div id="endo-reaction" class="absolute bottom-4 right-4 text-4xl text-slate-300"></div>
+                </div>
+
+                <!-- 動物 B (外溫) -->
+                <div class="card relative overflow-hidden transition-colors duration-500" id="card-ecto">
+                    <div class="absolute top-2 right-4 text-xs font-bold bg-white/80 px-2 py-1 rounded-full text-slate-500">
+                        外溫動物 (如：蜥蜴)
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <div id="ecto-visual" class="text-7xl text-green-600 transition-colors duration-300">
+                            <i class="fa-solid fa-staff-snake"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm text-slate-500 font-bold mb-1">體溫計</div>
+                            <div class="text-3xl font-mono font-bold text-green-600" id="ecto-temp">25.0°C</div>
+                            <div class="text-base mt-2 font-bold bg-slate-100 px-3 py-1 rounded-lg inline-block" id="ecto-status">
+                                隨環境變化
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 生理反應圖示 -->
+                    <div id="ecto-reaction" class="absolute bottom-4 right-4 text-4xl text-slate-300"></div>
+                </div>
+            </div>
+
+            <!-- 右側：即時圖表 -->
+            <div class="w-full lg:w-1/2">
+                <div class="card h-full flex flex-col">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-4 flex justify-between items-center">
+                        <span><i class="fa-solid fa-chart-line text-blue-500 mr-2"></i> 體溫變化曲線圖</span>
+                        <button onclick="clearTrace()" class="text-sm bg-slate-200 px-3 py-1 rounded hover:bg-slate-300 transition">
+                            <i class="fa-solid fa-rotate-right"></i> 重繪
+                        </button>
+                    </h3>
+                    
+                    <div class="relative flex-grow w-full bg-white border-2 border-slate-200 rounded-xl" id="chart-area">
+                        <!-- SVG Chart -->
+                        <svg id="main-chart" width="100%" height="100%" viewBox="0 0 400 400" preserveAspectRatio="none" class="absolute inset-0">
+                            <!-- 座標軸與格線 -->
+                            <defs>
+                                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f1f5f9" stroke-width="1"/>
+                                </pattern>
+                            </defs>
+                            <rect width="100%" height="100%" fill="url(#grid)" />
+                            
+                            <!-- 軸線 -->
+                            <line x1="40" y1="360" x2="380" y2="360" stroke="#64748b" stroke-width="2" /> <!-- X軸 -->
+                            <line x1="40" y1="20" x2="40" y2="360" stroke="#64748b" stroke-width="2" /> <!-- Y軸 -->
+                            
+                            <!-- 標籤 -->
+                            <text x="200" y="390" text-anchor="middle" fill="#64748b" font-size="14">環境溫度 (°C)</text>
+                            <text x="15" y="200" text-anchor="middle" fill="#64748b" font-size="14" transform="rotate(-90 15,200)">體溫 (°C)</text>
+                            
+                            <!-- 刻度 -->
+                            <text x="35" y="375" text-anchor="end" font-size="12" fill="#94a3b8">0</text>
+                            <text x="380" y="375" text-anchor="middle" font-size="12" fill="#94a3b8">45</text>
+                            <text x="30" y="360" text-anchor="end" font-size="12" fill="#94a3b8">0</text>
+                            <text x="30" y="40" text-anchor="end" font-size="12" fill="#94a3b8">45</text>
+
+                            <!-- 數據線 (路徑) -->
+                            <path id="trace-endo" d="M 40 360" fill="none" stroke="#ef4444" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                            <path id="trace-ecto" d="M 40 360" fill="none" stroke="#16a34a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                            
+                            <!-- 當前點指示器 -->
+                            <circle id="point-endo" cx="0" cy="0" r="6" fill="#ef4444" stroke="white" stroke-width="2" opacity="0"/>
+                            <circle id="point-ecto" cx="0" cy="0" r="6" fill="#16a34a" stroke="white" stroke-width="2" opacity="0"/>
+                        </svg>
+                    </div>
+
+                    <!-- 圖例 -->
+                    <div class="flex justify-center gap-8 mt-4 text-base font-bold">
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-1 bg-red-500 rounded-full"></span> 內溫動物
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-1 bg-green-600 rounded-full"></span> 外溫動物
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 評量區 -->
+        <section class="card border-l-8 border-teal-500">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="bg-teal-600 text-white text-base px-3 py-1 rounded-lg font-bold">圖表判讀測驗</span>
+                <h2 class="text-3xl font-bold text-slate-800">我是圖表分析師</h2>
+            </div>
+            
+            <div class="space-y-8">
+                <!-- 題目 1 -->
+                <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                    <p class="text-xl font-bold text-slate-800 mb-4">
+                        1. 觀察你在上方繪製的圖表，哪一條線代表「內溫動物」？它的特徵是什麼？
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="quiz-option p-4 rounded-xl" onclick="checkQ1('A', this)">
+                            <div class="font-bold text-red-600 mb-1">紅線</div>
+                            <div class="text-slate-600">幾乎呈水平直線，因為體溫維持恆定，不隨環境改變。</div>
+                        </div>
+                        <div class="quiz-option p-4 rounded-xl" onclick="checkQ1('B', this)">
+                            <div class="font-bold text-green-600 mb-1">綠線</div>
+                            <div class="text-slate-600">呈斜直線上升，因為體溫會隨著環境溫度升高而升高。</div>
+                        </div>
+                    </div>
+                    <div id="fb-q1" class="hidden mt-4 text-lg font-bold p-3 rounded-lg"></div>
+                </div>
+
+                <!-- 題目 2 -->
+                <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                    <p class="text-xl font-bold text-slate-800 mb-4">
+                        2. 當環境溫度很低（如 5°C）時，為什麼內溫動物（紅線）的體溫沒有下降？
+                    </p>
+                    <div class="space-y-3">
+                        <div class="quiz-option p-4 rounded-xl flex items-center gap-3" onclick="checkQ2('A', this)">
+                            <div class="w-6 h-6 border-2 border-slate-300 rounded-full flex-shrink-0"></div>
+                            <span>因為牠們有厚皮毛，完全隔絕了外界溫度。</span>
+                        </div>
+                        <div class="quiz-option p-4 rounded-xl flex items-center gap-3" onclick="checkQ2('B', this)">
+                            <div class="w-6 h-6 border-2 border-slate-300 rounded-full flex-shrink-0"></div>
+                            <span>因為身體會增加代謝（如發抖），主動產生熱能來維持體溫。</span>
+                        </div>
+                        <div class="quiz-option p-4 rounded-xl flex items-center gap-3" onclick="checkQ2('C', this)">
+                            <div class="w-6 h-6 border-2 border-slate-300 rounded-full flex-shrink-0"></div>
+                            <span>因為牠們冬眠了，體溫計量不到。</span>
+                        </div>
+                    </div>
+                    <div id="fb-q2" class="hidden mt-4 text-lg font-bold p-3 rounded-lg"></div>
+                </div>
+            </div>
+
+            <div class="text-center mt-8">
+                <p id="final-msg" class="text-slate-500 text-lg mb-6 font-medium">
+                    <i class="fa-solid fa-lock"></i> 請完成實驗與測驗以解鎖
+                </p>
+                <a id="next-btn" href="4-0.html" class="btn-locked inline-flex items-center gap-3 bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-12 rounded-full shadow-xl transition-all transform active:scale-95 text-xl">
+                    前往急診室實習 <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- 變數初始化 ---
+        const slider = document.getElementById('temp-slider');
+        const envDisplay = document.getElementById('env-temp-display');
+        
+        // 動物 DOM
+        const endoTempEl = document.getElementById('endo-temp');
+        const endoStatusEl = document.getElementById('endo-status');
+        const endoVisual = document.getElementById('endo-visual');
+        const endoCard = document.getElementById('card-endo');
+        const endoReaction = document.getElementById('endo-reaction');
+
+        const ectoTempEl = document.getElementById('ecto-temp');
+        const ectoStatusEl = document.getElementById('ecto-status');
+        const ectoVisual = document.getElementById('ecto-visual');
+        const ectoCard = document.getElementById('card-ecto');
+        const ectoReaction = document.getElementById('ecto-reaction');
+
+        // 圖表 DOM
+        const traceEndo = document.getElementById('trace-endo');
+        const traceEcto = document.getElementById('trace-ecto');
+        const pointEndo = document.getElementById('point-endo');
+        const pointEcto = document.getElementById('point-ecto');
+
+        // 記錄軌跡數據 (Set to deduplicate x values for cleaner lines)
+        let traceData = new Map(); // key: envTemp, value: {endo: t1, ecto: t2}
+
+        // 初始化
+        updateSimulation(25);
+
+        // --- 監聽滑桿 ---
+        slider.addEventListener('input', (e) => {
+            updateSimulation(parseInt(e.target.value));
+        });
+
+        // --- 核心模擬邏輯 ---
+        function updateSimulation(envTemp) {
+            envDisplay.innerText = `${envTemp}°C`;
+            
+            // 1. 計算體溫
+            // 內溫：大致恆定，極端環境微幅波動 (模擬真實感)
+            let endoTemp = 37.0;
+            if (envTemp < 5) endoTemp -= (5 - envTemp) * 0.05; // 極冷微降
+            if (envTemp > 38) endoTemp += (envTemp - 38) * 0.1; // 極熱微升 (發燒/熱衰竭前兆)
+            
+            // 外溫：隨環境線性變化，但有極限 (不會無限低或無限高，生物有極限)
+            let ectoTemp = envTemp;
+            // 假設稍微有點延遲或熱容量，這裡簡化為直接相等，最符合國中概念 y=x
+
+            // 2. 更新數值顯示
+            endoTempEl.innerText = endoTemp.toFixed(1) + "°C";
+            ectoTempEl.innerText = ectoTemp.toFixed(1) + "°C";
+
+            // 3. 更新動物狀態 (生理反應)
+            updateEndoStatus(envTemp, endoTemp);
+            updateEctoStatus(envTemp, ectoTemp);
+
+            // 4. 更新圖表
+            updateChart(envTemp, endoTemp, ectoTemp);
+        }
+
+        function updateEndoStatus(env, body) {
+            endoVisual.className = "text-7xl transition-transform duration-300 text-red-500"; // 恆溫始終紅色系
+            endoCard.className = "card relative overflow-hidden transition-colors duration-500";
+            
+            if (env < 15) {
+                endoStatusEl.innerText = "發抖產熱中...";
+                endoStatusEl.className = "text-base mt-2 font-bold bg-blue-100 text-blue-800 px-3 py-1 rounded-lg inline-block";
+                endoVisual.classList.add("shiver");
+                endoCard.classList.add("bg-blue-50");
+                endoReaction.innerHTML = '<i class="fa-solid fa-burger"></i>'; // 吃東西/產熱
+            } else if (env > 32) {
+                endoStatusEl.innerText = "流汗/喘氣散熱...";
+                endoStatusEl.className = "text-base mt-2 font-bold bg-red-100 text-red-800 px-3 py-1 rounded-lg inline-block";
+                endoVisual.classList.add("pant");
+                endoCard.classList.add("bg-red-50");
+                endoReaction.innerHTML = '<i class="fa-solid fa-droplet text-blue-400"></i>'; // 流汗
+            } else {
+                endoStatusEl.innerText = "代謝正常 (舒適)";
+                endoStatusEl.className = "text-base mt-2 font-bold bg-green-100 text-green-800 px-3 py-1 rounded-lg inline-block";
+                endoVisual.classList.remove("shiver", "pant");
+                endoCard.classList.remove("bg-blue-50", "bg-red-50");
+                endoReaction.innerHTML = '<i class="fa-regular fa-face-smile"></i>';
+            }
+        }
+
+        function updateEctoStatus(env, body) {
+            ectoVisual.classList.remove("shiver", "pant");
+            ectoCard.className = "card relative overflow-hidden transition-colors duration-500";
+
+            if (env < 15) {
+                ectoStatusEl.innerText = "代謝降低 (凍僵)";
+                ectoVisual.className = "text-7xl transition-colors duration-300 text-blue-500"; // 變藍
+                ectoCard.classList.add("bg-blue-100");
+                ectoReaction.innerHTML = '<i class="fa-solid fa-bed"></i>'; // 睡覺/不動
+            } else if (env > 35) {
+                ectoStatusEl.innerText = "代謝旺盛 (過熱)";
+                ectoVisual.className = "text-7xl transition-colors duration-300 text-red-500"; // 變紅
+                ectoCard.classList.add("bg-red-100");
+                ectoVisual.classList.add("pant"); // 活躍/喘
+                ectoReaction.innerHTML = '<i class="fa-solid fa-person-running"></i>';
+            } else {
+                ectoStatusEl.innerText = "活動力正常";
+                ectoVisual.className = "text-7xl transition-colors duration-300 text-green-600"; // 正常綠
+                ectoCard.classList.remove("bg-blue-100", "bg-red-100");
+                ectoReaction.innerHTML = '<i class="fa-regular fa-face-smile"></i>';
+            }
+        }
+
+        // --- 圖表繪製邏輯 ---
+        function updateChart(env, endo, ecto) {
+            // 座標轉換 (SVG 400x400)
+            // X軸: 0-45度 -> range 40-380px
+            // Y軸: 0-45度 -> range 360-20px
+            const mapX = (t) => 40 + (t / 45) * 340;
+            const mapY = (t) => 360 - (t / 45) * 340;
+
+            const cx = mapX(env);
+            
+            // 更新點的位置
+            pointEndo.setAttribute('cx', cx);
+            pointEndo.setAttribute('cy', mapY(endo));
+            pointEndo.setAttribute('opacity', 1);
+
+            pointEcto.setAttribute('cx', cx);
+            pointEcto.setAttribute('cy', mapY(ecto));
+            pointEcto.setAttribute('opacity', 1);
+
+            // 記錄軌跡 (使用 Map 確保每個 X 座標只有一個 Y，避免畫線混亂)
+            traceData.set(env, {endo: endo, ecto: ecto});
+
+            // 重繪線條
+            drawTrace();
+        }
+
+        function drawTrace() {
+            // 將 Map 轉為排序後的陣列
+            const sortedKeys = Array.from(traceData.keys()).sort((a, b) => a - b);
+            
+            const mapX = (t) => 40 + (t / 45) * 340;
+            const mapY = (t) => 360 - (t / 45) * 340;
+
+            let pathEndo = "";
+            let pathEcto = "";
+
+            sortedKeys.forEach((env, i) => {
+                const data = traceData.get(env);
+                const x = mapX(env);
+                const yEndo = mapY(data.endo);
+                const yEcto = mapY(data.ecto);
+
+                if (i === 0) {
+                    pathEndo += `M ${x} ${yEndo}`;
+                    pathEcto += `M ${x} ${yEcto}`;
+                } else {
+                    pathEndo += ` L ${x} ${yEndo}`;
+                    pathEcto += ` L ${x} ${yEcto}`;
+                }
+            });
+
+            traceEndo.setAttribute('d', pathEndo);
+            traceEcto.setAttribute('d', pathEcto);
+        }
+
+        function clearTrace() {
+            traceData.clear();
+            traceEndo.setAttribute('d', '');
+            traceEcto.setAttribute('d', '');
+            pointEndo.setAttribute('opacity', 0);
+            pointEcto.setAttribute('opacity', 0);
+            // 重置滑桿
+            slider.value = 25;
+            updateSimulation(25);
+        }
+
+        // --- 評量邏輯 ---
+        let q1Correct = false;
+        let q2Correct = false;
+
+        function checkQ1(ans, el) {
+            const fb = document.getElementById('fb-q1');
+            // 清除樣式
+            el.parentElement.querySelectorAll('.quiz-option').forEach(d => {
+                d.classList.remove('selected', 'border-red-500', 'border-green-500', 'bg-red-50', 'bg-green-50');
+            });
+            
+            if (ans === 'A') {
+                el.classList.add('border-green-500', 'bg-green-50');
+                fb.innerHTML = "<span class='text-green-600'><i class='fa-solid fa-circle-check'></i> 答對了！</span> 內溫動物體溫維持恆定（水平線），不隨環境改變。";
+                fb.classList.remove('hidden');
+                q1Correct = true;
+                checkPass();
+            } else {
+                el.classList.add('border-red-500', 'bg-red-50');
+                fb.innerHTML = "<span class='text-red-500'><i class='fa-solid fa-circle-xmark'></i> 答錯了。</span> 綠線隨著環境溫度上升而上升，這代表體溫會改變（外溫）。請再試一次！";
+                fb.classList.remove('hidden');
+                q1Correct = false;
+            }
+        }
+
+        function checkQ2(ans, el) {
+            const fb = document.getElementById('fb-q2');
+            // 清除樣式
+            el.parentElement.querySelectorAll('.quiz-option').forEach(d => {
+                d.classList.remove('selected', 'border-red-500', 'border-green-500', 'bg-red-50', 'bg-green-50');
+                // 恢復圓圈
+                d.querySelector('div').className = "w-6 h-6 border-2 border-slate-300 rounded-full flex-shrink-0";
+                d.querySelector('div').innerHTML = "";
+            });
+
+            // 選中樣式
+            const circle = el.querySelector('div');
+            
+            if (ans === 'B') {
+                el.classList.add('border-green-500', 'bg-green-50');
+                circle.classList.add('border-green-500', 'bg-green-500');
+                circle.innerHTML = "<i class='fa-solid fa-check text-white text-sm flex items-center justify-center h-full'></i>";
+                
+                fb.innerHTML = "<span class='text-green-600'><i class='fa-solid fa-circle-check'></i> 觀念正確！</span> 內溫動物在低溫時，會增加代謝作用（如顫抖）來產生熱能，維持體溫恆定。";
+                fb.classList.remove('hidden');
+                q2Correct = true;
+                checkPass();
+            } else {
+                el.classList.add('border-red-500', 'bg-red-50');
+                circle.classList.add('border-red-500');
+                
+                let hint = ans === 'A' ? "皮毛雖能保暖，但如果體內不產熱，體溫終究會下降喔。" : "冬眠時體溫會下降，但這張圖顯示的是維持恆定（37度），代表牠正在耗能產熱。";
+                fb.innerHTML = `<span class='text-red-500'><i class='fa-solid fa-circle-xmark'></i> 再想一下。</span> ${hint}`;
+                fb.classList.remove('hidden');
+                q2Correct = false;
+            }
+        }
+
+        function checkPass() {
+            if (q1Correct && q2Correct) {
+                const btn = document.getElementById('next-btn');
+                const msg = document.getElementById('final-msg');
+                btn.classList.remove('btn-locked');
+                btn.classList.add('animate-bounce');
+                msg.innerHTML = '<i class="fa-solid fa-star text-yellow-500"></i> 太棒了！你已經完全看懂這張圖表了。';
+                msg.classList.add('text-green-600', 'font-bold');
+            }
+        }
+    </script>
+</body>
+</html>
