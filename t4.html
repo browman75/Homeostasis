@@ -171,13 +171,21 @@
             </div>
 
             <!-- 病人展示區 -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 min-h-[300px]">
-                <!-- 左側：病人形象 -->
-                <div class="col-span-1 flex flex-col items-center justify-center bg-slate-50 rounded-2xl border-2 border-slate-200 p-6">
-                    <div id="patient-avatar" class="text-9xl text-slate-400 mb-4 transition-colors duration-500">
-                        <i class="fa-solid fa-person"></i>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 min-h-[400px]">
+                <!-- 左側：病人形象 (滿版設計) -->
+                <!-- 移除 p-6, 改為 flex-col 且 overflow-hidden -->
+                <div class="col-span-1 flex flex-col bg-slate-50 rounded-2xl border-2 border-slate-200 overflow-hidden h-full shadow-sm">
+                    
+                    <!-- 圖片區域：佔滿上方剩餘空間 (flex-grow) -->
+                    <div id="patient-avatar" class="flex-grow w-full relative bg-slate-100 flex items-center justify-center overflow-hidden transition-all duration-500">
+                        <!-- 預設 Icon -->
+                        <i class="fa-solid fa-person text-9xl text-slate-400"></i>
                     </div>
-                    <div id="patient-status" class="font-bold text-xl text-slate-500">等待叫號...</div>
+
+                    <!-- 狀態區域：固定在下方，加上內距與背景色 -->
+                    <div class="p-4 bg-white border-t border-slate-100 text-center z-10">
+                        <div id="patient-status" class="font-bold text-xl text-slate-500">等待叫號...</div>
+                    </div>
                 </div>
 
                 <!-- 右側：對話與操作 -->
@@ -273,8 +281,8 @@
             {
                 id: 1,
                 symptoms: "醫生...我覺得好冷...我的牙齒一直在打架（發抖），而且手腳都冰冰的，臉色看起來很蒼白。",
-                visualClass: "text-blue-400 animate-pulse",
-                icon: "fa-person-snowboarding",
+                visualClass: "animate-pulse", 
+                image: "t4-a.png",
                 type: "cold",
                 diagnosisMsg: "⭕ 診斷正確！<br>病人處於低溫環境。血管收縮導致臉色蒼白，肌肉顫抖是為了產熱。喝熱水有助於恢復體溫。",
                 feedbackClass: "bg-green-100 text-green-800 border-green-300"
@@ -282,8 +290,8 @@
             {
                 id: 2,
                 symptoms: "呼...呼...醫生，我剛跑完步，覺得頭好暈，臉好燙（潮紅），汗一直流停不下來...",
-                visualClass: "text-red-500",
-                icon: "fa-person-running",
+                visualClass: "", 
+                image: "t4-b.png",
                 type: "hot",
                 diagnosisMsg: "⭕ 診斷正確！<br>病人處於高溫/運動後狀態。血管擴張導致臉紅，流汗是為了散熱。需要補充水分並休息。",
                 feedbackClass: "bg-green-100 text-green-800 border-green-300"
@@ -312,10 +320,20 @@
             fb.classList.add('hidden');
             fb.className = "hidden mt-6 p-6 rounded-xl border-2 text-xl font-bold";
 
-            // 設定病人外觀與對話
-            const avatar = document.getElementById('patient-avatar');
-            avatar.className = `text-9xl mb-4 transition-colors duration-500 ${p.visualClass}`;
-            avatar.innerHTML = `<i class="fa-solid ${p.icon}"></i>`;
+            // 設定病人外觀
+            const avatarContainer = document.getElementById('patient-avatar');
+            
+            // 修改處：移除固定寬高，改為 flex-grow 與 w-full 以達滿版效果
+            avatarContainer.className = `flex-grow w-full relative overflow-hidden transition-all duration-500 bg-slate-100`;
+            
+            // 修改處：圖片使用 object-cover (填滿裁切) 或 object-contain (完整顯示但可能留白)
+            // 為了達到「滿版」效果，這裡使用 object-cover
+            avatarContainer.innerHTML = `
+                <img src="${p.image}" 
+                     alt="病人照片" 
+                     class="w-full h-full object-cover ${p.visualClass}" 
+                     onerror="this.src='https://placehold.co/400x400?text=No+Image'; this.alt='圖片載入失敗'">
+            `;
             
             document.getElementById('patient-status').innerText = "看診中...";
             
@@ -387,8 +405,12 @@
             document.getElementById('patient-count').innerText = "看診結束";
             document.getElementById('dialogue-box').innerText = "辛苦了，醫生！所有病人都已得到妥善照顧。請填寫下方的病歷報告（測驗）以完成值班。";
             document.getElementById('patient-status').innerText = "休息中";
-            document.getElementById('patient-avatar').className = "text-9xl text-green-500 mb-4";
-            document.getElementById('patient-avatar').innerHTML = '<i class="fa-solid fa-user-md"></i>';
+            
+            // 結束時顯示醫生圖示 (這裡改回 flex 佈局以置中 Icon)
+            const avatarContainer = document.getElementById('patient-avatar');
+            avatarContainer.className = "flex-grow w-full relative bg-slate-100 flex items-center justify-center text-9xl text-green-500";
+            avatarContainer.innerHTML = '<i class="fa-solid fa-user-md"></i>';
+            
             document.getElementById('diagnosis-feedback').classList.add('hidden');
 
             // 解鎖測驗區
@@ -401,7 +423,7 @@
             }, 500);
         }
 
-        // --- 評量邏輯 ---
+        // --- 評量邏輯 (保持不變) ---
         function checkFinalQuiz() {
             const ans1 = document.getElementById('ans1').value.trim();
             const ans2 = document.getElementById('ans2').value.trim();
