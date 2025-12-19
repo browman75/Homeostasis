@@ -197,7 +197,7 @@
             <div class="text-base text-slate-700 leading-relaxed space-y-2">
                 <p>
                     請觀察不同季節的溫度變化，並在<b>模擬過程中即時調整設備</b>來維持寵物體溫。
-                    <br><span class="text-xs text-slate-500 font-bold">※ 模擬從早上 8:00 開始，持續 24 小時。</span>
+                    <br><span class="text-xs text-slate-500 font-bold">※ 模擬從早上 8:00 開始，每 1 秒鐘紀錄 30 分鐘，持續 24 小時。</span>
                 </p>
                 <div class="grid md:grid-cols-2 gap-4">
                     <div class="bg-white p-3 rounded-lg border-l-4 border-indigo-500 shadow-sm text-sm">
@@ -473,12 +473,13 @@
         let clearedSeasons = new Set(); // 儲存已通關的季節 ['summer', 'winter']
         let isSimulating = false;
         let simInterval = null;
+        let currentTempOffset = 0; // 設備造成的溫差 (累積)
         
         // 模擬數據儲存
         let simData = {
             env: [],
             body: [],
-            hour: 0,
+            stepCount: 0, // 每步 30 分鐘
             health: 100,
             isDead: false,
             deathReason: ""
@@ -643,8 +644,10 @@
             });
             updateCageIcons();
 
-            // 重置資源
+            // 重置資源與變數
             resources = { food: false, water: false };
+            currentTempOffset = 0; // 重置溫差
+
             ['food', 'water'].forEach(k => {
                 const btn = document.getElementById(`btn-${k}`);
                 btn.disabled = false;
@@ -664,7 +667,7 @@
             simData = {
                 env: [],
                 body: [],
-                hour: 0,
+                stepCount: 0,
                 health: 100,
                 isDead: false,
                 deathReason: ""
@@ -672,41 +675,46 @@
 
             // 執行
             simulateStep();
-            simInterval = setInterval(simulateStep, 3000); // 3秒一跳 (記錄一次)
+            simInterval = setInterval(simulateStep, 1000); // 1秒 = 30分鐘
         }
 
         function simulateStep() {
-            const h = simData.hour; // 經過的小時數 (0, 1, 2...)
+            const step = simData.stepCount; 
             const config = petsData[currentPet];
             
-            // 計算當前真實時間 (從 8:00 開始)
+            // 計算當前真實時間 (從 8:00 開始, 每步 0.5 小時)
             const startHour = 8;
-            const realHour = (startHour + h) % 24;
+            const realHour = (startHour + (step * 0.5));
+            const cycleHour = realHour % 24; // 用於計算日夜循環
 
-            let tEnv;
+            // 1. 計算自然環境溫度
+            let naturalTemp;
             if (currentSeason === 'summer') {
-                // 夏天設定調整：
-                // 目標：08:00 (Start) = 26度
-                // 目標：16:00 (Peak) = 約39.5度 (累積熱能，延後峰值，致死)
-                // 目標：04:00 (Low) = 約21.5度 (夜晚安全)
-                // 數學：Base 30.5, Amp 9, Phase Shift Peak at 16:00
-                const summerCycle = Math.cos((realHour - 16) / 24 * 2 * Math.PI);
-                tEnv = 30.5 + (summerCycle * 9); 
+                // 夏天: 08:00 26度 -> 16:00 39.5度 -> 04:00 21.5度
+                const summerCycle = Math.cos((cycleHour - 16) / 24 * 2 * Math.PI);
+                naturalTemp = 30.5 + (summerCycle * 9); 
             } else {
-                // 冬天設定：
-                // 基準 20，振幅 7。
-                // 14:00 (Peak) = 27度 (舒適)
-                // 02:00 (Low) = 13度 (致死)
-                // 08:00 (Start) = 20度 (安全)
-                const winterCycle = Math.cos((realHour - 14) / 24 * 2 * Math.PI);
-                tEnv = 20 + (winterCycle * 7);
+                // 冬天: 08:00 20度 -> 14:00 27度 -> 02:00 13度
+                const winterCycle = Math.cos((cycleHour - 14) / 24 * 2 * Math.PI);
+                naturalTemp = 20 + (winterCycle * 7);
             }
 
-            // 設備影響環境/有效溫度
-            if (equipment.ac) tEnv -= 15; // 冷氣強力降溫
-            if (equipment.lamp) tEnv += 10; // 燈強力加溫
+            // 2. 設備溫度漸變 (熱慣性)
+            let targetOffset = 0;
+            if (equipment.ac) targetOffset -= 10; // 冷氣 -10度
+            if (equipment.lamp) targetOffset += 10;
 
-            // 2. 計算體溫 (Body Temp)
+            const changeRate = 2.0; // 每30分鐘改變2度
+            if (currentTempOffset < targetOffset) {
+                currentTempOffset = Math.min(targetOffset, currentTempOffset + changeRate);
+            } else if (currentTempOffset > targetOffset) {
+                currentTempOffset = Math.max(targetOffset, currentTempOffset - changeRate);
+            }
+
+            // 環境溫度 = 自然 + 設備影響
+            let tEnv = naturalTemp + currentTempOffset;
+
+            // 3. 計算體溫 (Body Temp)
             let bodyTemp = tEnv;
 
             // 食物產熱
@@ -717,16 +725,20 @@
                 bodyTemp = bodyTemp * 0.7 + 25 * 0.3;
             }
 
-            // 3. 判定與紀錄
+            // 4. 判定與紀錄
             simData.env.push(tEnv);
             simData.body.push(bodyTemp);
 
             // 視覺更新
             updateChartDisplay();
-            updateCageVisual(realHour, bodyTemp, true);
-            document.getElementById('clock-display').innerText = `${realHour.toString().padStart(2, '0')}:00`;
+            updateCageVisual(cycleHour, bodyTemp, true);
+            
+            // 時間顯示 HH:MM
+            const hourInt = Math.floor(cycleHour);
+            const minuteStr = (cycleHour % 1) === 0.5 ? '30' : '00';
+            document.getElementById('clock-display').innerText = `${hourInt.toString().padStart(2, '0')}:${minuteStr}`;
 
-            // 4. 生死判定
+            // 5. 生死判定
             if (bodyTemp < config.deadLow) {
                 simData.isDead = true; 
                 simData.deathReason = `凍死 (< ${config.deadLow}°C)`;
@@ -735,15 +747,15 @@
                 simData.deathReason = `熱死 (> ${config.deadHigh}°C)`;
             }
 
-            // 結束檢查
-            if (simData.isDead || h >= 24) {
+            // 結束檢查 (48 steps = 24 hours)
+            if (simData.isDead || step >= 48) {
                 clearInterval(simInterval);
                 isSimulating = false;
                 showResult();
                 document.getElementById('btn-start').innerHTML = '<i class="fa-solid fa-play mr-2"></i> 開始 24 小時模擬';
                 document.getElementById('btn-start').classList.remove('opacity-75', 'cursor-not-allowed');
             } else {
-                simData.hour++;
+                simData.stepCount++;
             }
         }
 
@@ -751,9 +763,9 @@
             const envLine = document.getElementById('line-env');
             const bodyLine = document.getElementById('line-body');
             
-            // 對應到 viewBox 600 x 250
+            // X 軸 600px 對應 48 個步進 (24小時)
             const getPoints = (data) => data.map((t, i) => {
-                const x = (i / 24) * 600;
+                const x = (i / 48) * 600;
                 const y = 250 - (t / 50) * 250;
                 return `${x},${y}`;
             }).join(' ');
