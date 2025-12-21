@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生物恆定性與分類跑酷賽</title>
+    
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --success-color: #66BB6A;
+            --danger-color: #EF5350;
+            --bg-color: #F0F4F8;
+            --text-color: #333;
+            --card-bg: #FFFFFF;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none; /* 防止學生選取文字 */
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* 上方參考圖鑑區 */
+        header {
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 2rem;
+        }
+
+        .reference-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* 一排5個 */
+            gap: 10px;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .ref-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 5px;
+            background: #fff;
+        }
+
+        .ref-card img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover; /* 裁切置中 */
+            border-radius: 4px;
+            margin-bottom: 5px;
+            background-color: #ddd;
+        }
+
+        .ref-card span {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .ref-card .class-tag {
+            font-size: 0.75rem;
+            color: var(--primary-color);
+            margin-top: 2px;
+        }
+
+        /* 遊戲主區域 */
+        .game-container {
+            width: 100%;
+            max-width: 1000px;
+            height: 450px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 左側動畫區 */
+        .animation-zone {
+            flex: 6;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 80%, #8D6E63 80%, #795548 100%);
+            position: relative;
+            overflow: hidden;
+            border-right: 2px solid #ddd;
+        }
+
+        /* 右側問答區 */
+        .quiz-zone {
+            flex: 4;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #FAFAFA;
+            position: relative;
+        }
+
+        /* 遊戲資訊列 (生命 & 分數) */
+        .game-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            display: flex;
+            gap: 15px;
+            background: rgba(255,255,255,0.8);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .hearts {
+            color: var(--danger-color);
+        }
+
+        /* 火柴人與障礙物 */
+        .stickman-wrapper {
+            position: absolute;
+            bottom: 20%; /* 地板高度 */
+            left: 10%;
+            width: 80px;
+            height: 100px;
+            transition: bottom 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 跳躍更順暢 */
+            transform-origin: bottom center;
+        }
+
+        .stickman {
+            width: 100%;
+            height: 100%;
+            fill: none;
+            stroke: #000;
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            overflow: visible;
+        }
+
+        /* --- 修正版動畫邏輯 --- 
+           手腳動畫現在改由 JS 控制，以支援 Safari。
+           CSS 只負責身體的震動和傾斜。
+        */
+        
+        /* 身體前傾與上下震動 (CSS 在 Safari 支援良好) */
+        .running .body-group {
+            animation: run-body 0.6s infinite linear;
+        }
+        
+        .running {
+            transform: skewX(-15deg); /* 增加前傾角度，更有速度感 */
+        }
+
+        /* 身體上下起伏 (配合腳步蹬地) */
+        @keyframes run-body {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-3px) rotate(1deg); } /* 騰空 */
+            50% { transform: translateY(0px) rotate(0deg); }
+            75% { transform: translateY(-3px) rotate(1deg); } /* 騰空 */
+        }
+
+        /* 跌倒狀態 - 修正為撲倒在障礙物前方 */
+        .fallen {
+            /* 向右位移模擬撲出去，向下位移貼近地板，旋轉90度模擬趴下 */
+            transform: translate(25px, 25px) rotate(90deg) !important; 
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 跌倒速度快一點，帶點彈性 */
+        }
+        .fallen .body-group {
+            animation: none !important;
+        }
+        /* 跌倒時的手腳姿勢，稍微亂一點，這邊用CSS覆寫預設值 */
+        /* 注意：因為JS會一直更新d，所以跌倒時JS會停止更新，我們可以在JS中設定跌倒姿勢 */
+        
+        /* 跳躍狀態 - 滯空動作 */
+        .jumping {
+            bottom: 60% !important; /* 跳得更高 */
+        }
+        
+        /* 跳躍時身體微後仰 (CSS) */
+        .jumping .body-group { animation: none; transform: rotate(-10deg); } 
+
+        .obstacle {
+            position: absolute;
+            bottom: 20%;
+            right: -50px;
+            width: 40px;
+            height: 40px;
+            background: #5D4037;
+            border-radius: 5px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        /* 地板線條，增加移動感 */
+        .ground-line {
+            position: absolute;
+            bottom: 20%;
+            width: 100%;
+            height: 2px;
+            background: #555;
+        }
+
+        /* 題目卡片設計 */
+        .question-card {
+            width: 100%;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            pointer-events: none; /* 隱藏時不可點擊 */
+        }
+
+        .question-card.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .q-img-container {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 15px;
+            border: 3px solid var(--primary-color);
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .q-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .q-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .timer-bar {
+            width: 100%;
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .timer-fill {
+            height: 100%;
+            background: var(--primary-color);
+            width: 100%;
+            transition: width 1s linear;
+        }
+
+        .options-grid {
+            display: grid;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .grid-2 { grid-template-columns: 1fr 1fr; }
+        .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+        .btn-option {
+            padding: 12px;
+            font-size: 1.1rem;
+            background: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--primary-color);
+            transition: 0.2s;
+            font-family: 'Noto Sans TC', sans-serif;
+            font-weight: bold;
+        }
+
+        .btn-option:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* 遮罩層 (開始、結束) */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+            text-align: center;
+        }
+
+        .overlay h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .btn-start, .btn-next {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            background: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Noto Sans TC';
+            box-shadow: 0 4px 0 #388E3C;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-start:active, .btn-next:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .stage-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #FF9800;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        /* 讓手機版堆疊顯示 */
+        @media (max-width: 768px) {
+            .reference-board {
+                grid-template-columns: repeat(5, 1fr);
+                overflow-x: auto;
+            }
+            .game-container {
+                flex-direction: column;
+                height: 700px;
+            }
+            .animation-zone {
+                flex: 1;
+                min-height: 200px;
+            }
+            .quiz-zone {
+                flex: 2;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>生物分類大考驗</h1>
+        <!-- 參考圖鑑區 -->
+        <div class="reference-board" id="referenceBoard">
+            <!-- JS 動態生成 -->
+        </div>
+    </header>
+
+    <div class="game-container">
+        
+        <!-- 左側動畫區 -->
+        <div class="animation-zone" id="animationZone">
+            <div class="game-info">
+                <span><i class="fas fa-heart hearts"></i> <span id="livesDisplay">3</span></span>
+                <span><i class="fas fa-star" style="color:#FFD700;"></i> <span id="scoreDisplay">0/10</span></span>
+            </div>
+            
+            <div class="stage-indicator" id="stageIndicator">第一階段：生物分類</div>
+
+            <!-- 裝飾用的一條地平線 -->
+            <div class="ground-line"></div>
+
+            <!-- 火柴人 SVG -->
+            <div class="stickman-wrapper running" id="stickman">
+                <svg viewBox="0 0 60 90" class="stickman">
+                    <!-- 使用 Group 包裹身體部分以便做彈跳動畫 -->
+                    <g class="body-group">
+                        <circle cx="30" cy="15" r="9" /> <!-- 頭 -->
+                        <path d="M30 24 L30 50" /> <!-- 身體 -->
+                        
+                        <!-- 手腳路徑 (將由 JS 控制) -->
+                        <path class="arm-l" id="armL" d="M30 30 L20 40 L15 35" /> <!-- 左手 -->
+                        <path class="arm-r" id="armR" d="M30 30 L40 40 L45 35" /> <!-- 右手 -->
+                        
+                        <path class="leg-l" id="legL" d="M30 50 L25 75 L20 75" /> <!-- 左腳 -->
+                        <path class="leg-r" id="legR" d="M30 50 L35 75 L40 75" /> <!-- 右腳 -->
+                    </g>
+                </svg>
+            </div>
+
+            <!-- 障礙物 -->
+            <div class="obstacle" id="obstacle"></div>
+        </div>
+
+        <!-- 右側問答區 -->
+        <div class="quiz-zone">
+            <div class="question-card" id="questionCard">
+                <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+                <div class="q-img-container">
+                    <img id="qImage" src="" alt="Question Image">
+                </div>
+                <h3 class="q-title" id="qName">生物名稱</h3>
+                <div class="options-grid" id="optionsGrid">
+                    <!-- 選項按鈕由 JS 生成 -->
+                </div>
+            </div>
+            <div style="text-align: center; color: #999;" id="waitingText">
+                <i class="fas fa-running fa-2x"></i><br>
+                跑跑跑...
+            </div>
+        </div>
+
+        <!-- 遊戲開始/結束遮罩 -->
+        <div class="overlay" id="gameOverlay">
+            <h2 id="overlayTitle">生物跑酷賽</h2>
+            <p id="overlayDesc" style="margin-bottom: 30px; font-size: 1.2rem;">準備好挑戰生物分類了嗎？</p>
+            <button class="btn-start" onclick="game.start()">開始遊戲</button>
+        </div>
+
+    </div>
+
+    <!-- 頁尾註記 -->
+    <footer style="margin-top: 20px; font-size: 0.9rem; color: #666;">
+        照片引用維基百科
+    </footer>
+
+    <script>
+        // 資料設定
+        const animalData = [
+            // 魚類 (需包含彈塗魚)
+            { id: 1, name: '彈塗魚', img: 't0-a01.png', class: '魚類', temp: '外溫動物' },
+            { id: 2, name: '小丑魚', img: 't0-a02.png', class: '魚類', temp: '外溫動物' },
+            // 兩生類 (需包含娃娃魚 -> 改山椒魚)
+            { id: 3, name: '山椒魚', img: 't0-a03.png', class: '兩生類', temp: '外溫動物' },
+            { id: 4, name: '樹蛙', img: 't0-a04.png', class: '兩生類', temp: '外溫動物' },
+            // 爬蟲類 (烏龜 -> 斑龜, 蜥蜴 -> 攀木蜥蜴)
+            { id: 5, name: '斑龜', img: 't0-a05.png', class: '爬蟲類', temp: '外溫動物' },
+            { id: 6, name: '攀木蜥蜴', img: 't0-a06.png', class: '爬蟲類', temp: '外溫動物' },
+            // 鳥類 (需包含企鵝)
+            { id: 7, name: '企鵝', img: 't0-a07.png', class: '鳥類', temp: '內溫動物' },
+            { id: 8, name: '麻雀', img: 't0-a08.png', class: '鳥類', temp: '內溫動物' },
+            // 哺乳類 (鯨魚 -> 抹香鯨)
+            { id: 9, name: '抹香鯨', img: 't0-a09.png', class: '哺乳類', temp: '內溫動物' },
+            { id: 10, name: '石虎', img: 't0-a10.png', class: '哺乳類', temp: '內溫動物' } // 改成石虎
+        ];
+
+        // 圖片載入失敗的備用方案 (生成假圖)
+        function getPlaceholder(name) {
+            // 使用 placehold.co 生成帶有文字的圖片
+            return `https://placehold.co/150/4A90E2/FFFFFF?text=${encodeURIComponent(name)}`;
+        }
+
+        // 初始化圖鑑
+        const refBoard = document.getElementById('referenceBoard');
+        animalData.forEach(animal => {
+            const div = document.createElement('div');
+            div.className = 'ref-card';
+            // 這裡加入 onerror 事件，如果本地沒有 t0-aXX.png，就顯示備用圖
+            div.innerHTML = `
+                <img src="${animal.img}" alt="${animal.name}" onerror="this.src='${getPlaceholder(animal.name)}'">
+                <span>${animal.name}</span>
+                <span class="class-tag">${animal.class}</span>
+            `;
+            refBoard.appendChild(div);
+        });
+
+        // 動作幀資料 (解決 Safari 相容性問題)
+        // 格式：[x1, y1, x2, y2] 對應線段中段點和終點
+        const keyframes = {
+            leg: [
+                [25, 75, 15, 75], // 0% 落地
+                [10, 60,  5, 50], // 25% 收腿
+                [40, 45, 50, 55], // 50% 抬腿
+                [45, 65, 45, 75], // 75% 伸腿
+                [25, 75, 15, 75]  // 100% 回到落地
+            ],
+            arm: [
+                [45, 35, 50, 20], // 0% 前擺
+                [40, 40, 40, 45], // 25% 下擺
+                [15, 35,  5, 40], // 50% 後擺
+                [20, 40, 30, 45], // 75% 上擺
+                [45, 35, 50, 20]  // 100% 回到前擺
+            ]
+        };
+
+        // 線性插值函數
+        function lerp(start, end, t) {
+            return start * (1 - t) + end * t;
+        }
+
+        // 計算當前路徑字串
+        function getPath(type, progress) {
+            const frames = keyframes[type];
+            // 找出當前進度在哪個區間
+            // 總共4個區間 (0-25, 25-50, 50-75, 75-100)
+            const totalFrames = frames.length - 1;
+            const scaledProgress = progress * totalFrames;
+            const idx = Math.floor(scaledProgress);
+            const nextIdx = Math.min(idx + 1, totalFrames);
+            const t = scaledProgress - idx;
+
+            const p1 = frames[idx];
+            const p2 = frames[nextIdx];
+
+            const x1 = lerp(p1[0], p2[0], t);
+            const y1 = lerp(p1[1], p2[1], t);
+            const x2 = lerp(p1[2], p2[2], t);
+            const y2 = lerp(p1[3], p2[3], t);
+            
+            // 根據類型決定起點 (手:30,30 / 腳:30,50)
+            const origin = type === 'arm' ? 'M30 30' : 'M30 50';
+            return `${origin} L${x1.toFixed(1)} ${y1.toFixed(1)} L${x2.toFixed(1)} ${y2.toFixed(1)}`;
+        }
+
+        // 遊戲核心邏輯
+        const game = {
+            stage: 1, // 1: 分類, 2: 內外溫
+            questionCount: 0, 
+            lives: 3,
+            maxLives: 3,
+            timer: null,
+            timeLeft: 10,
+            isPaused: true,
+            obstaclePos: -50,
+            isJumping: false, 
+            qPool: [],
+            
+            // 動畫變數
+            runProgress: 0, // 0~1 跑步循環進度
+            runSpeed: 0.025, // 跑步速度
+
+            // DOM 元素
+            stickman: document.getElementById('stickman'),
+            obstacle: document.getElementById('obstacle'),
+            questionCard: document.getElementById('questionCard'),
+            waitingText: document.getElementById('waitingText'),
+            timerFill: document.getElementById('timerFill'),
+            
+            // 手腳 SVG 元素
+            armL: document.getElementById('armL'),
+            armR: document.getElementById('armR'),
+            legL: document.getElementById('legL'),
+            legR: document.getElementById('legR'),
+            
+            init: function() {
+                // 重置狀態
+                this.stage = 1;
+                this.questionCount = 0;
+                this.lives = 3;
+                this.isJumping = false;
+                document.getElementById('livesDisplay').innerText = this.lives;
+                document.getElementById('scoreDisplay').innerText = `0/10`;
+                document.getElementById('stageIndicator').innerText = "第一階段：生物分類";
+                this.obstaclePos = -50;
+                this.obstacle.style.right = '-50px';
+                this.stickman.classList.remove('fallen', 'jumping');
+                this.stickman.classList.add('running');
+                this.generateQuestionPool(); 
+            },
+
+            generateQuestionPool: function() {
+                this.qPool = Array.from({length: animalData.length}, (_, i) => i);
+                for (let i = this.qPool.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.qPool[i], this.qPool[j]] = [this.qPool[j], this.qPool[i]];
+                }
+            },
+
+            start: function() {
+                document.getElementById('gameOverlay').style.display = 'none';
+                this.init();
+                this.isPaused = false;
+                this.gameLoop();
+            },
+
+            gameLoop: function() {
+                if (this.isPaused) return;
+
+                // --- 1. 更新動畫狀態 ---
+                if (!this.isJumping && !this.stickman.classList.contains('fallen')) {
+                    // 只有在跑步時更新手腳
+                    this.runProgress = (this.runProgress + this.runSpeed) % 1;
+                    
+                    // 左腳進度, 右腳進度 (差0.5週期)
+                    const legLP = this.runProgress;
+                    const legRP = (this.runProgress + 0.5) % 1;
+                    
+                    // 左手進度 (配右腳, 所以跟右腳同相)
+                    const armLP = (this.runProgress + 0.5) % 1; 
+                    const armRP = this.runProgress;
+
+                    this.legL.setAttribute('d', getPath('leg', legLP));
+                    this.legR.setAttribute('d', getPath('leg', legRP));
+                    this.armL.setAttribute('d', getPath('arm', armLP));
+                    this.armR.setAttribute('d', getPath('arm', armRP));
+                } else if (this.isJumping) {
+                    // 跳躍姿勢固定
+                    this.legL.setAttribute('d', "M30 50 L50 45 L60 55");
+                    this.legR.setAttribute('d', "M30 50 L10 60 L5 65");
+                    this.armL.setAttribute('d', "M30 30 L15 40 L10 25");
+                    this.armR.setAttribute('d', "M30 30 L45 40 L50 25");
+                } else if (this.stickman.classList.contains('fallen')) {
+                     // 跌倒姿勢固定
+                    this.legL.setAttribute('d', "M30 50 L40 60 L45 55");
+                    this.legR.setAttribute('d', "M30 50 L25 60 L20 70");
+                    this.armL.setAttribute('d', "M30 30 L40 20 L50 25");
+                    this.armR.setAttribute('d', "M30 30 L40 40 L45 35");
+                }
+
+                // --- 2. 移動障礙物邏輯 ---
+                const containerWidth = document.querySelector('.animation-zone').offsetWidth;
+                let currentRight = parseInt(this.obstacle.style.right || -50);
+                currentRight += 6; 
+
+                // 碰撞檢測邏輯
+                const collisionStart = containerWidth * 0.8 - 50; 
+                const collisionEnd = collisionStart + 60; 
+
+                if (currentRight > collisionStart && currentRight < collisionEnd) {
+                    if (!this.isJumping) {
+                        this.pauseRun();
+                        this.showQuestion();
+                        return; 
+                    }
+                }
+
+                if (currentRight > containerWidth + 50) {
+                    this.obstacle.style.right = '-50px';
+                    requestAnimationFrame(() => this.gameLoop());
+                } else {
+                    this.obstacle.style.right = currentRight + 'px';
+                    requestAnimationFrame(() => this.gameLoop());
+                }
+            },
+
+            pauseRun: function() {
+                this.isPaused = true;
+                this.stickman.classList.remove('running');
+                // 暫停時保持最後一幀的姿勢，或者可以重置為站立，這裡選擇保持
+            },
+
+            resumeRun: function() {
+                this.stickman.classList.add('jumping');
+                this.isJumping = true;
+                
+                this.isPaused = false;
+                this.gameLoop();
+
+                setTimeout(() => {
+                    this.stickman.classList.remove('jumping');
+                    this.isJumping = false;
+                    
+                    if (!this.isPaused) {
+                        this.stickman.classList.add('running');
+                    }
+                }, 800);
+            },
+
+            fallAndRetry: function() {
+                this.stickman.classList.add('fallen');
+                
+                // 強制觸發一次渲染以更新跌倒姿勢
+                this.gameLoop(); 
+                // 這裡有點特別，因為gameLoop被paused擋住了，所以手動設一下屬性確保萬無一失
+                this.legL.setAttribute('d', "M30 50 L40 60 L45 55");
+                this.legR.setAttribute('d', "M30 50 L25 60 L20 70");
+                this.armL.setAttribute('d', "M30 30 L40 20 L50 25");
+                this.armR.setAttribute('d', "M30 30 L40 40 L45 35");
+
+                setTimeout(() => {
+                    this.stickman.classList.remove('fallen');
+                    this.stickman.classList.add('running');
+                    this.obstacle.style.right = '-50px';
+                    this.isPaused = false;
+                    this.gameLoop();
+                }, 1000); 
+            },
+
+            showQuestion: function() {
+                this.waitingText.style.display = 'none';
+                this.questionCard.classList.add('active');
+
+                if (this.questionCount === 5 && this.stage === 1) {
+                    this.stage = 2;
+                    document.getElementById('stageIndicator').innerText = "第二階段：體溫調節";
+                    this.generateQuestionPool();
+                }
+
+                if (this.qPool.length === 0) this.generateQuestionPool();
+                const qIndex = this.qPool.pop();
+                const qAnimal = animalData[qIndex];
+
+                document.getElementById('qName').innerText = qAnimal.name;
+                const imgEl = document.getElementById('qImage');
+                imgEl.src = qAnimal.img;
+                imgEl.onerror = function() { this.src = getPlaceholder(qAnimal.name); };
+
+                const grid = document.getElementById('optionsGrid');
+                grid.innerHTML = '';
+
+                let options = [];
+                let correctAnswer = '';
+
+                if (this.stage === 1) {
+                    options = ['魚類', '兩生類', '爬蟲類', '鳥類', '哺乳類'];
+                    correctAnswer = qAnimal.class;
+                    grid.className = 'options-grid grid-3'; 
+                } else {
+                    options = ['內溫動物', '外溫動物'];
+                    correctAnswer = qAnimal.temp;
+                    grid.className = 'options-grid grid-2'; 
+                }
+
+                options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-option';
+                    btn.innerText = opt;
+                    btn.onclick = () => this.checkAnswer(opt, correctAnswer);
+                    grid.appendChild(btn);
+                });
+
+                this.timeLeft = 10;
+                this.updateTimerBar();
+                clearInterval(this.timer);
+                this.timer = setInterval(() => {
+                    this.timeLeft--;
+                    this.updateTimerBar();
+                    if (this.timeLeft <= 0) {
+                        this.handleTimeOut();
+                    }
+                }, 1000);
+            },
+
+            updateTimerBar: function() {
+                const percentage = (this.timeLeft / 10) * 100;
+                this.timerFill.style.width = percentage + '%';
+                
+                if(percentage < 30) {
+                    this.timerFill.style.backgroundColor = 'var(--danger-color)';
+                } else {
+                    this.timerFill.style.backgroundColor = 'var(--primary-color)';
+                }
+            },
+
+            checkAnswer: function(selected, correct) {
+                clearInterval(this.timer);
+                this.questionCard.classList.remove('active');
+                this.waitingText.style.display = 'block';
+
+                if (selected === correct) {
+                    this.questionCount++;
+                    document.getElementById('scoreDisplay').innerText = `${this.questionCount}/10`;
+                    
+                    if (this.questionCount >= 10) {
+                        this.gameOver(true);
+                    } else {
+                        this.resumeRun(); 
+                    }
+                } else {
+                    this.lives--;
+                    document.getElementById('livesDisplay').innerText = this.lives;
+                    
+                    if (this.lives <= 0) {
+                        this.gameOver(false);
+                    } else {
+                        this.fallAndRetry();
+                    }
+                }
+            },
+
+            handleTimeOut: function() {
+                clearInterval(this.timer);
+                this.questionCard.classList.remove('active');
+                this.waitingText.style.display = 'block';
+                
+                this.lives--;
+                document.getElementById('livesDisplay').innerText = this.lives;
+                if (this.lives <= 0) {
+                    this.gameOver(false);
+                } else {
+                    this.fallAndRetry();
+                }
+            },
+
+            gameOver: function(isWin) {
+                const overlay = document.getElementById('gameOverlay');
+                const title = document.getElementById('overlayTitle');
+                const desc = document.getElementById('overlayDesc');
+                
+                overlay.style.display = 'flex';
+                const oldBtn = overlay.querySelector('button');
+                if(oldBtn) oldBtn.remove();
+                
+                const oldLink = overlay.querySelector('a');
+                if(oldLink) oldLink.remove();
+
+                if (isWin) {
+                    title.innerText = "恭喜過關！";
+                    title.style.color = "#4CAF50";
+                    desc.innerText = "你已經精通生物分類與體溫調節囉！";
+                    
+                    const nextBtn = document.createElement('a');
+                    nextBtn.className = 'btn-next';
+                    nextBtn.innerText = "前往下一頁";
+                    nextBtn.href = "t0-un.html";
+                    overlay.appendChild(nextBtn);
+                } else {
+                    title.innerText = "挑戰失敗";
+                    title.style.color = "#EF5350";
+                    desc.innerText = "別氣餒，再試一次吧！";
+                    
+                    const retryBtn = document.createElement('button');
+                    retryBtn.className = 'btn-start';
+                    retryBtn.innerText = "重新開始";
+                    retryBtn.onclick = () => game.start();
+                    overlay.appendChild(retryBtn);
+                }
+            }
+        };
+
+        // 頁面載入後不自動開始，等待點擊
+    </script>
+</body>
+</html>
