@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生物恆定性與體溫小評量</title>
+    
+    <!-- 1. 引入 Font Awesome CDN (圖示庫) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 2. 引入 Google Fonts (Noto Sans TC) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* CSS 變數設定 */
+        :root {
+            --primary-color: #4CAF50; /* 生物學常用的綠色 */
+            --primary-hover: #45a049;
+            --bg-color: #f0f4f1;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --disabled-color: #cccccc;
+        }
+
+        /* 基礎重置與字體設定 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            /* 針對國中生視力保健，設定較大的基礎字體 */
+            font-size: 18px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* 主容器：卡片式設計 */
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 900px; /* 限制最大寬度 */
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 標題區塊 */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        /* 內容區塊 */
+        .content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 表單容器 */
+        .form-wrapper {
+            width: 100%;
+            /* 設定固定高度比例，讓表單在內部捲動，避免頁面過長 */
+            height: 70vh; 
+            border: 2px solid #eee;
+            border-radius: 10px;
+            overflow: hidden; /* 隱藏溢出的部分，交給 iframe 捲動 */
+            margin-bottom: 25px;
+            position: relative;
+            background-color: #fff;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* 控制區塊（確認與按鈕） */
+        .controls {
+            width: 100%;
+            padding: 20px;
+            background-color: #fafafa;
+            border-top: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Checkbox 樣式優化 */
+        .check-group {
+            display: flex;
+            align-items: center;
+            font-size: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 10px 20px;
+            background: white;
+            border-radius: 50px;
+            border: 2px solid #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .check-group:hover {
+            border-color: var(--primary-color);
+            background: #f9fff9;
+        }
+
+        .check-group input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+
+        /* 下一頁按鈕樣式 */
+        .next-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-decoration: none; /* 如果是用 a 標籤 */
+        }
+
+        .next-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        .next-btn:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .next-btn:hover:not(:disabled) i {
+            transform: translateX(5px);
+        }
+
+        /* 禁用狀態樣式 */
+        .next-btn:disabled {
+            background-color: var(--disabled-color);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 提示文字 */
+        .hint {
+            font-size: 16px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        /* 手機版調整 */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+                font-size: 16px;
+            }
+            
+            header h1 {
+                font-size: 24px;
+            }
+
+            .form-wrapper {
+                height: 65vh; /* 手機上稍微調整高度 */
+            }
+
+            .next-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-temperature-high"></i> 生物恆定性與體溫小評量</h1>
+            <p>請仔細閱讀題目，完成下方表單後即可進入下一單元。</p>
+        </header>
+
+        <div class="content">
+            <!-- Google Form 嵌入區 -->
+            <div class="form-wrapper">
+                <!-- 更新後的 iframe -->
+                <iframe 
+                    src="https://docs.google.com/forms/d/e/1FAIpQLSdv3D7XQX4d6zRdVSrgMCO6KqkQoFN-V84B7Xi1Eceii1aniw/viewform?embedded=true" 
+                    width="640" 
+                    height="4885" 
+                    frameborder="0" 
+                    marginheight="0" 
+                    marginwidth="0"
+                    title="生物恆定性測驗表單">
+                    載入中…
+                </iframe>
+            </div>
+        </div>
+
+        <div class="controls">
+            <!-- 互動確認機制 -->
+            <label class="check-group">
+                <input type="checkbox" id="submissionCheck">
+                <span>我已完成並送出表單</span>
+            </label>
+
+            <!-- 導航按鈕 -->
+            <button id="nextBtn" class="next-btn" disabled onclick="goToNextPage()">
+                下一頁 <i class="fas fa-arrow-right"></i>
+            </button>
+            
+            <p class="hint">
+                <i class="fas fa-info-circle"></i> 提示：請先在上方勾選確認，按鈕才會解鎖喔！
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // 取得 DOM 元素
+        const checkbox = document.getElementById('submissionCheck');
+        const nextBtn = document.getElementById('nextBtn');
+
+        // 監聽 Checkbox 狀態改變
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                // 如果勾選，啟用按鈕
+                nextBtn.removeAttribute('disabled');
+                nextBtn.title = "點擊前往下一頁";
+            } else {
+                // 如果取消勾選，禁用按鈕
+                nextBtn.setAttribute('disabled', 'true');
+                nextBtn.title = "請先完成表單確認";
+            }
+        });
+
+        // 按鈕點擊功能
+        function goToNextPage() {
+            // 跳轉至指定頁面 r0.html
+            // 請確保 r0.html 檔案存在於相同資料夾中
+            window.location.href = 'r0.html';
+        }
+    </script>
+</body>
+</html>
