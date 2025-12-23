@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>熱衰竭與中暑：生存大作戰</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-blue: #3498db; /* 冷色調：代表調節、降溫 */
+            --primary-red: #e74c3c;  /* 暖色調：代表危險、高熱 */
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+            --success: #2ecc71;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-light);
+        }
+
+        /* Card UI System */
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .card-header i {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        /* Video Section */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: 10px;
+            background-color: #000;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Knowledge Content Styles */
+        .knowledge-content p {
+            font-size: 1.2rem; /* 大字體保護視力 */
+            margin-bottom: 15px;
+        }
+
+        .highlight-blue {
+            color: var(--primary-blue);
+            font-weight: bold;
+            background-color: rgba(52, 152, 219, 0.1);
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+
+        .highlight-red {
+            color: var(--primary-red);
+            font-weight: bold;
+            background-color: rgba(231, 76, 60, 0.1);
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .info-box {
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid;
+        }
+
+        .info-exhaustion {
+            background-color: #eaf2f8;
+            border-color: var(--primary-blue);
+        }
+
+        .info-stroke {
+            background-color: #fdedec;
+            border-color: var(--primary-red);
+        }
+
+        .info-box h3 {
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+
+        /* Quiz Styles */
+        .quiz-section {
+            background-color: #fff;
+            border: 2px solid var(--primary-blue);
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #ddd;
+        }
+
+        .question-block:last-child {
+            border-bottom: none;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--text-dark);
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 1.1rem;
+            text-align: left;
+            transition: all 0.2s;
+            font-family: 'Noto Sans TC', sans-serif;
+            position: relative;
+        }
+
+        .option-btn:hover {
+            background-color: #f8f9fa;
+            border-color: var(--primary-blue);
+        }
+
+        .option-btn.selected {
+            border-color: var(--primary-blue);
+            background-color: #eaf2f8;
+        }
+
+        .option-btn.correct {
+            border-color: var(--success);
+            background-color: #e8f8f5;
+            color: #155724;
+        }
+        
+        .option-btn.correct::after {
+            content: '\f00c';
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            right: 15px;
+            color: var(--success);
+        }
+
+        .option-btn.wrong {
+            border-color: var(--primary-red);
+            background-color: #fdedec;
+            color: #721c24;
+        }
+
+        .option-btn.wrong::after {
+            content: '\f00d';
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            right: 15px;
+            color: var(--primary-red);
+        }
+
+        .feedback-msg {
+            margin-top: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            min-height: 24px;
+        }
+
+        /* Navigation Button */
+        .nav-area {
+            text-align: center;
+            margin-top: 20px;
+            padding-bottom: 50px;
+        }
+
+        #nextBtn {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            background-color: #95a5a6; /* Default disabled color */
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: not-allowed;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: all 0.3s;
+        }
+
+        #nextBtn.active {
+            background-color: var(--success);
+            cursor: pointer;
+            animation: pulse 2s infinite;
+        }
+
+        #nextBtn.active:hover {
+            transform: scale(1.05);
+            background-color: #27ae60;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(46, 204, 113, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <header>
+            <h1><i class="fa-solid fa-temperature-arrow-up" style="color: var(--primary-red);"></i> 熱衰竭與中暑</h1>
+            <p class="subtitle">觀看影片，學習如何保護自己，完成挑戰即可前往下一關！</p>
+        </header>
+
+        <!-- Video Card -->
+        <section class="card">
+            <div class="card-header">
+                <i class="fa-brands fa-youtube" style="color: #ff0000;"></i>
+                <span class="card-title">知識補給站</span>
+            </div>
+            <!-- Muted, Autoplay, End at 130s (2:10) -->
+            <div class="video-container">
+		<iframe width="560" height="315" src="https://www.youtube.com/embed/hBO8weakpJQ?si=re1N4CGY-neVMu5A" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; 	encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </section>
+
+        <!-- Content/Notes Card -->
+        <section class="card">
+            <div class="card-header">
+                <i class="fa-solid fa-book-medical" style="color: var(--text-dark);"></i>
+                <span class="card-title">重點筆記</span>
+            </div>
+            <div class="knowledge-content">
+                <p>人體就像一台精密的機器，需要維持恆定的溫度。當我們在炎熱的環境中運動，身體會透過<span class="highlight-blue">流汗</span>來蒸發散熱，這是最重要的降溫機制。</p>
+                
+                <div class="comparison-grid">
+                    <!-- 熱衰竭 -->
+                    <div class="info-box info-exhaustion">
+                        <h3 style="color: var(--primary-blue);"><i class="fa-solid fa-droplet"></i> 熱衰竭 (Heat Exhaustion)</h3>
+                        <p><strong>成因：</strong>身體為了散熱流了太多的汗，導致水分與鹽分流失，血液循環不足。</p>
+                        <p><strong>關鍵症狀：</strong></p>
+                        <ul>
+                            <li>皮膚：<span class="highlight-blue">濕冷、蒼白</span></li>
+                            <li>感覺：頭暈、噁心、虛弱</li>
+                            <li>體溫：正常或稍微升高</li>
+                        </ul>
+                    </div>
+
+                    <!-- 中暑 -->
+                    <div class="info-box info-stroke">
+                        <h3 style="color: var(--primary-red);"><i class="fa-solid fa-fire-flame-curved"></i> 中暑 (Heat Stroke)</h3>
+                        <p><strong>成因：</strong>更加嚴重！身體的<span class="highlight-red">體溫調節中樞失效</span>，已經無法排汗散熱，像壞掉的冷氣機。</p>
+                        <p><strong>關鍵症狀：</strong></p>
+                        <ul>
+                            <li>皮膚：<span class="highlight-red">發紅、發熱、乾燥 (無汗)</span></li>
+                            <li>感覺：意識不清、昏迷</li>
+                            <li>體溫：極高 (通常超過 40°C)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quiz Section -->
+        <section class="card quiz-section">
+            <div class="card-header">
+                <i class="fa-solid fa-clipboard-question" style="color: var(--primary-blue);"></i>
+                <span class="card-title">闖關挑戰</span>
+            </div>
+            <p style="margin-bottom: 20px; color: #666;">請回答以下三個問題，全對才能解鎖下一關按鈕喔！</p>
+
+            <!-- Question 1 -->
+            <div class="question-block" id="q1-block">
+                <p class="question-text">1. 關於「流汗」的功能，下列敘述何者正確？</p>
+                <div class="options-container" id="q1-options">
+                    <button class="option-btn" onclick="checkAnswer(1, 'A')">A. 流汗是為了讓皮膚變乾燥。</button>
+                    <button class="option-btn" onclick="checkAnswer(1, 'B')">B. 流汗的主要目的是透過蒸發來幫助身體散熱降溫。</button>
+                    <button class="option-btn" onclick="checkAnswer(1, 'C')">C. 流汗表示身體生病了，應該立刻停止運動。</button>
+                </div>
+                <div class="feedback-msg" id="q1-feedback"></div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="question-block" id="q2-block">
+                <p class="question-text">2. 小明在大太陽下打球，突然覺得頭暈、臉色蒼白，摸起來「皮膚濕濕冷冷」的。請問他最可能發生了什麼狀況？</p>
+                <div class="options-container" id="q2-options">
+                    <button class="option-btn" onclick="checkAnswer(2, 'A')">A. 熱衰竭 (Heat Exhaustion)</button>
+                    <button class="option-btn" onclick="checkAnswer(2, 'B')">B. 中暑 (Heat Stroke)</button>
+                    <button class="option-btn" onclick="checkAnswer(2, 'C')">C. 只是肚子餓了</button>
+                </div>
+                <div class="feedback-msg" id="q2-feedback"></div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="question-block" id="q3-block">
+                <p class="question-text">3. 為什麼嚴重的「中暑」患者，皮膚反而會變得「乾燥無汗」且發紅？</p>
+                <div class="options-container" id="q3-options">
+                    <button class="option-btn" onclick="checkAnswer(3, 'A')">A. 因為身體的水分已經全部喝光了。</button>
+                    <button class="option-btn" onclick="checkAnswer(3, 'B')">B. 因為細菌感染導致毛孔堵塞。</button>
+                    <button class="option-btn" onclick="checkAnswer(3, 'C')">C. 因為腦部的「體溫調節中樞」失效，身體失去排汗散熱的功能。</button>
+                </div>
+                <div class="feedback-msg" id="q3-feedback"></div>
+            </div>
+
+        </section>
+
+        <!-- Navigation -->
+        <div class="nav-area">
+            <button id="nextBtn" onclick="goToNextLevel()">
+                <i class="fa-solid fa-lock"></i> 下一關 (尚未解鎖)
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // 正確答案設定
+        const correctAnswers = {
+            1: 'B',
+            2: 'A',
+            3: 'C'
+        };
+
+        // 玩家的作答狀態
+        let playerAnswers = {
+            1: null,
+            2: null,
+            3: null
+        };
+
+        function checkAnswer(questionNum, selectedOption) {
+            // 記錄玩家答案
+            playerAnswers[questionNum] = selectedOption;
+            
+            const optionsDiv = document.getElementById(`q${questionNum}-options`);
+            const feedbackDiv = document.getElementById(`q${questionNum}-feedback`);
+            const buttons = optionsDiv.getElementsByClassName('option-btn');
+
+            // 重置該題按鈕樣式
+            for (let btn of buttons) {
+                btn.className = 'option-btn'; // 移除 correct, wrong, selected
+                btn.disabled = true; // 鎖定該題不可再選
+            }
+
+            // 判斷對錯
+            const isCorrect = selectedOption === correctAnswers[questionNum];
+            
+            // 找出被點選的按鈕並上色
+            // 這裡簡單透過文字內容或順序判斷，或是重新遍歷
+            // 為了準確，我們可以用迴圈比對點擊的內容，但在這個簡單架構下，
+            // 我們直接根據 selectedOption (A, B, C) 也就是 index 0, 1, 2 來處理
+            
+            const indexMap = {'A': 0, 'B': 1, 'C': 2};
+            const clickedBtn = buttons[indexMap[selectedOption]];
+
+            if (isCorrect) {
+                clickedBtn.classList.add('correct');
+                feedbackDiv.innerHTML = '<span style="color: var(--success);"><i class="fa-solid fa-circle-check"></i> 答對了！觀念很正確喔！</span>';
+            } else {
+                clickedBtn.classList.add('wrong');
+                // 顯示正確答案是哪個
+                const correctBtn = buttons[indexMap[correctAnswers[questionNum]]];
+                correctBtn.classList.add('correct'); // 同時顯示正確答案給學生看
+                feedbackDiv.innerHTML = '<span style="color: var(--primary-red);"><i class="fa-solid fa-circle-xmark"></i> 答錯囉！請看上方筆記再複習一次。</span>';
+            }
+
+            // 每次作答後檢查是否全對
+            checkAllCorrect();
+        }
+
+        function checkAllCorrect() {
+            // 檢查是否每一題都有作答，且答案都正確
+            const q1Correct = playerAnswers[1] === correctAnswers[1];
+            const q2Correct = playerAnswers[2] === correctAnswers[2];
+            const q3Correct = playerAnswers[3] === correctAnswers[3];
+
+            const nextBtn = document.getElementById('nextBtn');
+
+            if (q1Correct && q2Correct && q3Correct) {
+                nextBtn.classList.add('active');
+                nextBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> 下一關 (點擊前往)';
+                nextBtn.onclick = function() {
+                    window.location.href = 'tt-2.html';
+                };
+            } else {
+                // 如果有答錯，可以提供一個重置按鈕或是提示 (本範例為簡單教學，僅顯示回饋)
+                // 如果已經三題都答了但沒過關
+                if (playerAnswers[1] && playerAnswers[2] && playerAnswers[3]) {
+                   if(!nextBtn.classList.contains('active')) {
+                       // 可以在這裡加一個"重新挑戰"的邏輯，但在簡單網頁中，通常讓學生F5重整或直接看正確答案學習即可
+                       // 為了更好的UX，若全部答完但沒全對，顯示提示
+                       // console.log("有題目答錯");
+                   }
+                }
+            }
+        }
+
+        function goToNextLevel() {
+            if (!document.getElementById('nextBtn').classList.contains('active')) {
+                alert("請先完成所有題目且答對，才能解鎖喔！");
+            }
+        }
+    </script>
+</body>
+</html>
