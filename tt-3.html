@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科普小學堂：狗會流汗嗎？</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #4A90E2; /* 冷色調：代表涼爽 */
+            --accent-color: #FF6B6B;  /* 暖色調：代表高溫/重點 */
+            --bg-color: #F0F4F8;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
+            --text-secondary: #666666;
+            --success: #2ECC71;
+            --radius: 16px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.8;
+            font-size: 18px; /* 較大字體護眼 */
+        }
+
+        /* Layout */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        /* Card UI */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+            border-left: 6px solid var(--primary-color);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        /* Video Section */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #000;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Content List */
+        .learning-points {
+            list-style: none;
+        }
+
+        .learning-points li {
+            margin-bottom: 15px;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .learning-points li::before {
+            content: '\f1b0'; /* Paw icon */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            color: var(--accent-color);
+        }
+
+        .highlight {
+            color: var(--accent-color);
+            font-weight: bold;
+            background: rgba(255, 107, 107, 0.1);
+            padding: 0 5px;
+            border-radius: 4px;
+        }
+
+        /* Quiz Section */
+        .quiz-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .question-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.5s;
+        }
+
+        .question-box.active {
+            display: block;
+        }
+
+        .question-text {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .options {
+            display: grid;
+            gap: 10px;
+        }
+
+        .option-btn {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 1rem;
+            font-family: inherit;
+            text-align: left;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:hover:not(.disabled) {
+            border-color: var(--primary-color);
+            background: #f0f7ff;
+        }
+
+        .option-btn.correct {
+            border-color: var(--success);
+            background: #e8f8f0;
+            color: #155724;
+        }
+
+        .option-btn.wrong {
+            border-color: var(--accent-color);
+            background: #fff5f5;
+            color: #721c24;
+        }
+
+        .feedback-msg {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1rem;
+            display: none;
+        }
+
+        .feedback-correct {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .feedback-wrong {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Navigation Button */
+        .nav-section {
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 60px;
+            opacity: 0.5;
+            pointer-events: none;
+            transition: all 0.5s;
+        }
+
+        .nav-section.unlocked {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .next-btn {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.3rem;
+            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .next-btn:hover {
+            transform: scale(1.05);
+            background: #357abd;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            body { font-size: 16px; }
+            .card { padding: 20px; }
+            h1 { font-size: 1.8rem; }
+            .next-btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1><i class="fas fa-dog"></i> 補充知識：狗會流汗嗎？</h1>
+        <p class="subtitle">探索狗狗神奇的散熱機制</p>
+    </header>
+
+    <main>
+        <!-- Card 1: Video -->
+        <section class="card">
+            <div class="card-title">
+                <i class="fas fa-video"></i> 觀看影片 (請看到 2:00)
+            </div>
+            <div class="video-container">
+                <!-- 影片嵌入：靜音、自動播放、範圍設定 0-120秒 -->
+                <iframe 
+                    src="https://www.youtube.com/embed/kF3lpUaTejc?start=0&end=120&autoplay=1&mute=1&controls=1&cc_load_policy=1" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+            <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                <i class="fas fa-info-circle"></i> 影片已設定為靜音，請手動開啟音量。重點片段已設定為前 2 分鐘。
+            </p>
+        </section>
+
+        <!-- Card 2: Learning Points -->
+        <section class="card">
+            <div class="card-title">
+                <i class="fas fa-book-open"></i> 重點整理
+            </div>
+            <ul class="learning-points">
+                <li>人類主要靠皮膚上的汗腺排汗來散熱，但狗狗的皮膚幾乎<span class="highlight">沒有汗腺</span>。</li>
+                <li>狗狗唯一的汗腺位於<span class="highlight">腳掌 (肉墊)</span> 上，但面積太小，散熱效果有限。</li>
+                <li>狗狗主要的散熱方式是透過<span class="highlight">張嘴喘氣</span>。</li>
+                <li>當狗狗喘氣時，冷空氣進入，帶走<span class="highlight">舌頭與肺部</span>的水分，利用水分蒸發來降低體溫。</li>
+            </ul>
+        </section>
+
+        <!-- Card 3: Interactive Quiz -->
+        <section class="card">
+            <div class="card-title">
+                <i class="fas fa-gamepad"></i> 知識隨堂測驗
+            </div>
+            <p style="margin-bottom: 20px;">答對所有問題即可前往下一頁！</p>
+            
+            <div id="quiz-area" class="quiz-container">
+                <!-- Question 1 -->
+                <div class="question-box active" id="q1">
+                    <div class="question-text">1. 關於狗狗的散熱，下列哪一個敘述是正確的？</div>
+                    <div class="options">
+                        <button class="option-btn" onclick="checkAnswer('q1', 'A')">A. 像人類一樣全身皮膚都會流汗</button>
+                        <button class="option-btn" onclick="checkAnswer('q1', 'B')">B. 狗狗完全沒有汗腺，只能靠呼吸</button>
+                        <button class="option-btn" onclick="checkAnswer('q1', 'C')">C. 主要靠張嘴喘氣，利用舌頭水分蒸發散熱</button>
+                    </div>
+                    <div class="feedback-msg" id="feedback-q1"></div>
+                </div>
+
+                <!-- Question 2 -->
+                <div class="question-box" id="q2">
+                    <div class="question-text">2. 狗狗身上哪裡真的有汗腺？</div>
+                    <div class="options">
+                        <button class="option-btn" onclick="checkAnswer('q2', 'A')">A. 耳朵背面</button>
+                        <button class="option-btn" onclick="checkAnswer('q2', 'B')">B. 腳掌的肉墊</button>
+                        <button class="option-btn" onclick="checkAnswer('q2', 'C')">C. 尾巴末端</button>
+                    </div>
+                    <div class="feedback-msg" id="feedback-q2"></div>
+                </div>
+
+                <!-- Question 3 -->
+                <div class="question-box" id="q3">
+                    <div class="question-text">3. 為什麼夏天時常看到狗狗伸出舌頭哈哈氣？</div>
+                    <div class="options">
+                        <button class="option-btn" onclick="checkAnswer('q3', 'A')">A. 為了幫助身體降溫散熱</button>
+                        <button class="option-btn" onclick="checkAnswer('q3', 'B')">B. 因為牠們口渴想喝水</button>
+                        <button class="option-btn" onclick="checkAnswer('q3', 'C')">C. 這是狗狗表示肚子餓的方式</button>
+                    </div>
+                    <div class="feedback-msg" id="feedback-q3"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Navigation Footer -->
+    <footer class="nav-section" id="nav-footer">
+        <p style="margin-bottom: 10px; color: var(--success); font-weight: bold;">
+            <i class="fas fa-check-circle"></i> 太棒了！你已完成學習！
+        </p>
+        <a href="tt-3.html" class="next-btn">
+            前往下一頁 <i class="fas fa-arrow-right"></i>
+        </a>
+    </footer>
+</div>
+
+<script>
+    // Quiz Configuration
+    const answers = {
+        'q1': { correct: 'C', explanation: '正確！狗狗皮膚幾乎沒有汗腺，主要靠張嘴喘氣，利用水分蒸發帶走熱量。' },
+        'q2': { correct: 'B', explanation: '沒錯！狗狗唯一的汗腺位於腳掌肉墊上，但散熱功能有限。' },
+        'q3': { correct: 'A', explanation: '答對了！這是狗狗最主要的散熱機制。' }
+    };
+
+    let correctCount = 0;
+    const totalQuestions = 3;
+
+    function checkAnswer(questionId, selectedOption) {
+        const feedbackEl = document.getElementById(`feedback-${questionId}`);
+        const buttons = document.querySelectorAll(`#${questionId} .option-btn`);
+        const correctAnswer = answers[questionId].correct;
+
+        // Disable buttons after selection to prevent multiple guesses
+        buttons.forEach(btn => {
+            btn.classList.add('disabled');
+            btn.disabled = true;
+            
+            // Mark the selected one
+            if(btn.textContent.startsWith(selectedOption)) {
+                if(selectedOption === correctAnswer) {
+                    btn.classList.add('correct');
+                    btn.innerHTML += ' <i class="fas fa-check"></i>';
+                } else {
+                    btn.classList.add('wrong');
+                    btn.innerHTML += ' <i class="fas fa-times"></i>';
+                }
+            }
+
+            // Highlight the correct one if user got it wrong
+            if(selectedOption !== correctAnswer && btn.textContent.startsWith(correctAnswer)) {
+                btn.classList.add('correct');
+            }
+        });
+
+        // Show Feedback
+        feedbackEl.style.display = 'block';
+        if (selectedOption === correctAnswer) {
+            feedbackEl.className = 'feedback-msg feedback-correct';
+            feedbackEl.innerHTML = `<i class="fas fa-smile-beam"></i> ${answers[questionId].explanation}`;
+            correctCount++;
+            
+            // Show next question after a short delay
+            setTimeout(() => {
+                showNextQuestion(questionId);
+            }, 1500);
+
+        } else {
+            feedbackEl.className = 'feedback-msg feedback-wrong';
+            feedbackEl.innerHTML = `<i class="fas fa-frown-open"></i> 哎呀答錯了。正確答案是 ${correctAnswer}。<br>${answers[questionId].explanation}`;
+            
+            // Even if wrong, show next question to keep flow, but could be stricter
+            setTimeout(() => {
+                showNextQuestion(questionId);
+            }, 3000);
+        }
+    }
+
+    function showNextQuestion(currentId) {
+        // Logic to reveal the next question or the final button
+        const currentNum = parseInt(currentId.replace('q', ''));
+        const nextId = `q${currentNum + 1}`;
+        const nextEl = document.getElementById(nextId);
+
+        if (nextEl) {
+            nextEl.classList.add('active');
+            // Scroll to the new question smoothly
+            nextEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            // All questions finished
+            checkCompletion();
+        }
+    }
+
+    function checkCompletion() {
+        const navFooter = document.getElementById('nav-footer');
+        // Unlock button regardless of score to allow progression in this demo context,
+        // or strictly check if(correctCount === totalQuestions)
+        navFooter.classList.add('unlocked');
+        navFooter.scrollIntoView({ behavior: 'smooth' });
+    }
+</script>
+
+</body>
+</html>
